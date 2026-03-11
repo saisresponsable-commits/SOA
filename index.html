@@ -1848,11 +1848,12 @@ async function callClaude(messages, attempt = 1) {
       let errData = {};
       try { errData = await response.json(); } catch {}
       console.error('API Error:', errData);
-      if (response.status === 429 && attempt < MAX_ATTEMPTS) {
-        showRetryNotice(attempt);
-        await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt));
-        hideRetryNotice();
-        return callClaude(messages, attempt + 1);
+      if (response.status === 429) {
+        // Rate limit: wait longer and show countdown
+        const waitSec = 15;
+        await showCountdown(waitSec);
+        if (attempt < MAX_ATTEMPTS) return callClaude(messages, attempt + 1);
+        return "Limite de requêtes atteinte. Patientez une minute puis réessayez.";
       }
       return `Une erreur s'est produite (${response.status}). Vérifiez votre clé API et réessayez.`;
     }
@@ -1885,6 +1886,20 @@ function showRetryNotice(attempt) {
 function hideRetryNotice() {
   const el = document.getElementById('retryNotice');
   if (el) el.remove();
+}
+
+async function showCountdown(seconds) {
+  const container = document.getElementById('chatContainer');
+  const el = document.createElement('div');
+  el.id = 'retryNotice';
+  el.style.cssText = 'margin-left:48px;font-size:12px;color:var(--muted);padding:8px 14px;background:rgba(212,151,74,0.1);border:1px solid rgba(212,151,74,0.25);border-radius:8px;width:fit-content;';
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+  for (let i = seconds; i > 0; i--) {
+    el.textContent = `⏳ Limite de débit atteinte — reprise dans ${i}s…`;
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  el.remove();
 }
 </script>
 </body>
