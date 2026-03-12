@@ -925,7 +925,7 @@
         <div class="card-icon orange">🎓</div>
         <div>
           <div class="card-title">Je m'adresse à vous</div>
-          <div class="card-desc">Enseignants, éducateurs, équipes CPMS, coordinateurs pédagogiques.</div>
+          <div class="card-desc">Enseignants, éducateurs, équipes 1re primaireMS, coordinateurs pédagogiques.</div>
         </div>
       </div>
       <div class="info-card">
@@ -1052,7 +1052,10 @@ let postAnalysisMode = false;
 let lastAnalysisData = null;
 
 const SYSTEM_PROMPT = `Tu es SOA (Soutien à l'Observation et aux Aménagements, prononcé "soa").
-Tu accompagnes les enseignants et professionnels scolaires dans leur réflexion sur la situation d'un élève à besoins particuliers.
+Tu accompagnes les enseignants et professionnels scolaires en Belgique francophone dans leur réflexion sur la situation d'un élève à besoins particuliers.
+
+CONTEXTE SCOLAIRE BELGE FRANCOPHONE :
+Utilise toujours le vocabulaire belge : maternelle (M1, M2, M3), primaire (1re à 6e), secondaire (1re à 6e). Ne jamais utiliser CP, CE1, CE2, CM1, CM2 (système français). Les équipes de soutien s'appellent PMS (centres psycho-médico-sociaux) ou CPMS. Les plans d'aménagement s'appellent PAI (Plan d'Accompagnement Individuel) ou PIA (Plan Individuel d'Apprentissage).
 
 ---
 
@@ -1063,7 +1066,7 @@ Tu sais que derrière chaque situation décrite, il y a un enseignant qui fait d
 ---
 
 LIMITES NON NÉGOCIABLES :
-Tu es un outil de réflexion pédagogique uniquement. Tu ne poses jamais de diagnostic médical, psychologique ou clinique. Tu ne remplace aucun professionnel de santé ou du soin. Si la situation l'exige, tu peux suggérer de consulter une équipe PMS/CPMS ou un spécialiste — avec tact, jamais de façon alarmiste.
+Tu es un outil de réflexion pédagogique uniquement. Tu ne poses jamais de diagnostic médical, psychologique ou clinique. Tu ne remplace aucun professionnel de santé ou du soin. Si la situation l'exige, tu peux suggérer de consulter une équipe PMS/1re primaireMS ou un spécialiste — avec tact, jamais de façon alarmiste.
 
 ---
 
@@ -1174,7 +1177,7 @@ async function runDemo() {
   // Fake conversation display
   const exchanges = [
     {
-      user: "Bonjour, j'ai un élève de 9 ans en CE2 qui me préoccupe vraiment en ce moment.",
+      user: "Bonjour, j'ai un élève de 9 ans en 3e primaire qui me préoccupe vraiment en ce moment.",
       bot: "Bonjour. Je suis contente que vous preniez ce temps — parfois, le fait de mettre des mots sur une situation aide déjà à y voir plus clair. Qu'est-ce que vous observez avec lui en classe ?"
     },
     {
@@ -1524,7 +1527,7 @@ function renderAnalysis(data) {
       alertDiv.innerHTML = `
         <div class="alert-title">⚠️ Signaux d'alerte identifiés</div>
         ${data.signaux_alerte.map(s => `• ${s}`).join('<br>')}
-        <br><br><small>Ces signaux suggèrent d'envisager : un échange avec les parents, une discussion en équipe pédagogique, une observation approfondie ou une consultation CPMS/PMS.</small>
+        <br><br><small>Ces signaux suggèrent d'envisager : un échange avec les parents, une discussion en équipe pédagogique, une observation approfondie ou une consultation 1re primaireMS/PMS.</small>
       `;
       container.appendChild(alertDiv);
       scrollToBottom();
@@ -2006,5 +2009,7 @@ function hideRetryNotice() {
 </div>
 
 </body>
+</html>
+
 </html>
 
