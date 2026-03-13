@@ -255,7 +255,7 @@ function initState() {
     data: {
       pseudo: 'l\'élève', niveau: '', age: '',
       diagnostic: '', typesBesoin: [],
-      obs: { histoire: '', participation: '', consignes: '', autonomie: '', social: '', transitions: '', bienetre: '', langue: '', complement: '' },
+      obs: { histoire: '', participation: '', forces: '', appuisExistants: '', consignes: '', autonomie: '', social: '', transitions: '', bienetre: '', langue: '', complement: '' },
       scores: { inclusion: 0, social: 0, autonomie: 0, bienetre: 0, langue: 0 }
     }
   };
@@ -743,7 +743,7 @@ function detectSignaux(obs) {
   const texte = [
     obs.histoire || '', obs.participation || '', obs.consignes || '',
     obs.autonomie || '', obs.social || '', obs.transitions || '',
-    obs.bienetre || '', obs.forces || '', obs.complement || ''
+    obs.bienetre || '', obs.forces || '', obs.appuisExistants || '', obs.complement || ''
   ].join(' ').toLowerCase();
 
   const signauxDetectes = [];
@@ -779,8 +779,8 @@ function detectTroubles(types) {
       detected.push(trouble.id);
     }
   });
-  // Fallback si rien détecté
-  if (detected.length === 0) detected.push('general');
+  // Si rien détecté : on ne pousse pas 'general' dans TROUBLES_DB
+  // Le moteur de dimensions/signaux prendra seul le relais
   return [...new Set(detected)];
 }
 
@@ -796,16 +796,16 @@ function inferDimensions(troubleIds, obs) {
   // Niveau 2 : dimensions inférées depuis les observations (lecture fonctionnelle)
   const o = [obs.participation, obs.consignes, obs.autonomie, obs.social, obs.transitions, obs.bienetre].join(' ').toLowerCase();
 
-  if (/distrait|lune|décroche|attention|concentration/i.test(o))           dims.add('attention');
-  if (/oubli|organisation|planif|démarre pas|désorganis/i.test(o))         dims.add('fonctionsExecutives');
-  if (/consigne.*comprend|comprend pas.*consigne|oral.*mieux|écrit.*dur/i.test(o)) dims.add('langageOral');
-  if (/lire|lecture|écrire|écriture|orthographe|copie/i.test(o))           dims.add('langageEcrit');
-  if (/calcul|math|nombre|procédure/i.test(o))                             dims.add('mathematiques');
-  if (/écriture.*lent|geste|moteur|main|crayon|maladress/i.test(o))        dims.add('motricite');
-  if (/copain|ami|pair|isolé|seul|relation/i.test(o))                      dims.add('social');
-  if (/stress|anxieux|peur|pleur|évite|angoiss|frustration/i.test(o))      dims.add('emotionnel');
-  if (/bruit|lumière|sensoriel|surcharge/i.test(o))                        dims.add('sensoriel');
-  if (/démarre|matériel|transition|autonomie|seul/i.test(o))               dims.add('autonomie');
+  if (/distrait|dans la lune|décroche|ne suit pas|concentration/i.test(o))   dims.add('attention');
+  if (/oubli|désorganis|planif|démarre pas|perd le fil|ne sait pas commencer/i.test(o)) dims.add('fonctionsExecutives');
+  if (/consigne.*comprend pas|comprend pas.*consigne|oral.*mieux que.*écrit|mieux.*à l.oral/i.test(o)) dims.add('langageOral');
+  if (/lire|lecture|écriture difficile|orthographe|copie coûteuse/i.test(o)) dims.add('langageEcrit');
+  if (/calcul|mathématiques|nombre|procédure/i.test(o))                    dims.add('mathematiques');
+  if (/écriture.*lent|geste difficile|motricité|maladresse|main fatiguée/i.test(o)) dims.add('motricite');
+  if (/isolé|pas d.ami|évite les autres|difficultés relationnelles|reste dans son coin/i.test(o)) dims.add('social');
+  if (/stress|anxieux|peur de se tromper|pleure|évitement|angoisse|frustration/i.test(o)) dims.add('emotionnel');
+  if (/bruit|lumière|sensoriel|surcharge sensorielle/i.test(o))            dims.add('sensoriel');
+  if (/ne démarre pas seul|transitions difficiles|besoin d.être relancé|matériel en désordre/i.test(o)) dims.add('autonomie');
 
   return [...dims];
 }
@@ -1099,7 +1099,10 @@ function buildAnalysis() {
     asavoir.push(`Situation diagnostique : ${d.diagnostic}${types}. Ces éléments orientent les pistes proposées.`);
   }
   if (obs.forces && obs.forces.length > 5) {
-    asavoir.push(`Appuis identifiés : ${obs.forces.substring(0, 120)}${obs.forces.length > 120 ? '…' : ''}`);
+    asavoir.push(`Points d'appui observés : ${obs.forces.substring(0, 120)}${obs.forces.length > 120 ? '…' : ''}`);
+  }
+  if (obs.appuisExistants && obs.appuisExistants.length > 5) {
+    asavoir.push(`Ce qui aide déjà : ${obs.appuisExistants.substring(0, 120)}${obs.appuisExistants.length > 120 ? '…' : ''}`);
   }
   if (/participe|répond|actif|lève\s+la\s+main|volontaire/i.test(obs.participation || '')) {
     asavoir.push(`${p} montre des capacités de participation dans certains contextes — un appui à valoriser.`);
@@ -1221,6 +1224,10 @@ function buildAnalysis() {
       bien_etre:                  { score: s.bienetre,  statut: getStatut(s.bienetre),  explication: `Basé sur les signes de stress, de fatigue, de surcharge et de motivation observés.` },
       accessibilite_linguistique: { score: s.langue,    statut: getStatut(s.langue),    explication: `Basé sur la maîtrise de la langue d'enseignement et la compréhension des consignes.` }
     },
+    appuis: asavoir.filter(a => a.includes("appui") || a.includes("soutient") || a.includes("aide") || a.includes("force") || a.includes("motivé") || a.includes("lien") || a.includes("visuel")),
+    raisonnement: dimsActives.length > 0
+      ? `Dimensions fonctionnelles actives : <strong>${dimsActives.join(', ')}</strong>.<br>Ces dimensions ont été inférées depuis ${signauxDetectes.signauxDetectes.length > 0 ? 'les observations et ' : ''}le profil diagnostique déclaré. Elles orientent les hypothèses et les ajustements proposés.`
+      : null,
     asavoir, vigilance, pistes, bien_etre_detail, linguistique_detail,
     signaux_alerte: signauxAlerte, conclusion
   };
@@ -1243,18 +1250,20 @@ Merci d'utiliser un prénom fictif pour l'élève dont vous allez me parler.
 
 Quand vous êtes prêt·e — qu'est-ce qui vous amène aujourd'hui ?`,
   diagnostic:        (p) => `Je vois. Est-ce qu'un diagnostic ou une évaluation a déjà été fait pour ${p} — ou est-ce qu'on travaille uniquement sur l'observation pour l'instant ?`,
-  moments_difficiles:(p) => `Merci. Dans quels moments de la journée ou de la semaine les difficultés de ${p} se voient-elles le plus ? Est-ce qu'il y a des situations qui semblent déclencher ou aggraver ce que vous observez ?`,
-  moments_positifs:  (p) => `Et à l'inverse — quand est-ce que ça se passe mieux ? Quels sont les moments, les activités ou les contextes où ${p} semble plus à l'aise, plus engagé·e ?`,
-  participation:     (p) => `C'est utile. Comment se passe la participation de ${p} dans les activités collectives — est-ce qu'il ou elle s'engage, prend la parole, ou plutôt s'efface ?`,
-  consignes:         (p) => `D'accord. Et les consignes — est-ce que ${p} semble les comprendre ? Y a-t-il des formats qui passent mieux que d'autres (oral, écrit, avec exemple, visuel) ?`,
-  autonomie:         (p) => `Je vois. Est-ce que ${p} peut démarrer une tâche seul·e, ou a-t-il besoin d'être relancé ? Et quand ça bloque, est-ce qu'il/elle demande de l'aide ?`,
-  social:            (p) => `Merci. Et côté relations avec les autres élèves — comment ça se passe ? Il y a des liens, des tensions, ou plutôt de l'isolement ?`,
-  bienetre:          (p) => `Comment vous sentez ${p} globalement — est-ce qu'il ou elle semble stressé·e, fatigué·e, ou au contraire motivé·e dans certains contextes ?`,
-  langue:            (p) => `Une chose encore — la langue d'enseignement est-elle sa langue maternelle ? Ou est-ce que ça pourrait jouer un rôle dans ce que vous observez ?`,
-  complement:        (p) => `On a fait un bon tour ensemble. Avant que je prépare l'analyse — est-ce qu'il y a quelque chose sur ${p} que vous n'avez pas encore pu dire, et qui vous semble important ?`,
+  moments_difficiles:(p) => `Merci. Dans quels moments les difficultés de ${p} se voient-elles le plus ? Y a-t-il des situations qui semblent déclencher ou aggraver ce que vous observez ?`,
+  moments_positifs:  (p) => `Et à l'inverse — quand est-ce que ça se passe mieux pour ${p} ? Quels moments, quelles activités, quels contextes semblent lui réussir davantage ?`,
+  forces:            (p) => `Chez ${p}, qu'est-ce qui fonctionne bien — ou mieux que le reste ? Qu'est-ce qui vous montre qu'il ou elle a des ressources, même dans les moments difficiles ?`,
+  appuisExistants:   (p) => `Est-ce que quelque chose aide déjà, même un peu ? Un type de support, une façon de travailler, un adulte, un contexte particulier ?`,
+  participation:     (p) => `Merci. Comment se passe la participation de ${p} dans les activités collectives — est-ce qu'il ou elle s'engage, prend la parole, ou plutôt s'efface ?`,
+  consignes:         (p) => `Et les consignes — est-ce que ${p} semble les comprendre ? Y a-t-il des formats qui passent mieux (oral, écrit, exemple concret, visuel) ?`,
+  autonomie:         (p) => `Est-ce que ${p} peut démarrer une tâche seul·e, ou a-t-il besoin d'être relancé ? Quand ça bloque, est-ce qu'il ou elle demande de l'aide ?`,
+  social:            (p) => `Côté relations avec les autres élèves — comment ça se passe ? Y a-t-il des liens, des tensions, ou plutôt de l'isolement ?`,
+  bienetre:          (p) => `Comment vous sentez ${p} globalement — stressé·e, fatigué·e, ou au contraire motivé·e dans certains moments ?`,
+  langue:            (p) => `La langue d'enseignement est-elle sa langue maternelle ? Ou est-ce que ça pourrait jouer un rôle dans ce que vous observez ?`,
+  complement:        (p) => `On a fait un bon tour ensemble. Avant que je prépare l'analyse — est-ce qu'il y a quelque chose sur ${p} que vous n'avez pas encore pu dire ?`,
 };
 
-const STEPS_ORDER = ['context','pseudo','demande','niveau','age','diagnostic','moments_difficiles','moments_positifs','participation','consignes','autonomie','social','bienetre','langue','complement'];
+const STEPS_ORDER = ['context','pseudo','demande','niveau','age','diagnostic','moments_difficiles','moments_positifs','forces','appuisExistants','participation','consignes','autonomie','social','bienetre','langue','complement'];
 
 function getNextStep(current) {
   const idx = STEPS_ORDER.indexOf(current);
@@ -1408,11 +1417,19 @@ function processInput(text) {
       break;
 
     case 'moments_difficiles':
-      state.data.obs.transitions = text; // réutilise transitions pour les moments difficiles
+      state.data.obs.transitions = text;
       advanceTo('moments_positifs');
       break;
     case 'moments_positifs':
+      state.data.obs.bienetre = (state.data.obs.bienetre + ' ' + text).trim();
+      advanceTo('forces');
+      break;
+    case 'forces':
       state.data.obs.forces = text;
+      advanceTo('appuisExistants');
+      break;
+    case 'appuisExistants':
+      state.data.obs.appuisExistants = text;
       advanceTo('participation');
       break;
     case 'participation':
@@ -1450,7 +1467,7 @@ function processInput(text) {
 }
 
 function advanceTo(next) {
-  const stepsMap = { moments_difficiles:4, moments_positifs:5, participation:5, consignes:6, autonomie:6, social:7, bienetre:7, langue:8, complement:8, final:8 };
+  const stepsMap = { moments_difficiles:3, moments_positifs:4, forces:5, appuisExistants:5, participation:6, consignes:6, autonomie:7, social:7, bienetre:7, langue:8, complement:8, final:8 };
   state.step = next;
   updateProgress(stepsMap[next] || state.stepNum);
 
@@ -1756,8 +1773,16 @@ Quand vous êtes prêt·e, dites-moi ce qui vous amène.`, true);
       bot: "C'est utile. Et à l'inverse — quand est-ce que ça se passe mieux pour lui ? Y a-t-il des contextes où il semble plus là, plus engagé ?"
     },
     {
-      user: "Il est vraiment motivé quand on fait des sciences ou des activités manuelles. Et j'ai remarqué que quand je lui montre un exemple concret avant de démarrer, il comprend beaucoup mieux les consignes.",
-      bot: "C'est une observation très exploitable — l'exemple concret comme point d'ancrage, les sciences comme levier. Est-ce qu'il participe spontanément en classe, ou plutôt il attend qu'on l'interpelle ?"
+      user: "Il est vraiment motivé quand on fait des sciences ou des activités manuelles. Et quand je lui montre un exemple concret avant de démarrer, il comprend beaucoup mieux.",
+      bot: "C'est précieux — les sciences et les activités manuelles comme points d'ancrage, l'exemple concret comme déclic. Et justement, chez Léo, qu'est-ce qui fonctionne bien — ou mieux que le reste ? Qu'est-ce qui vous montre qu'il a des ressources ?"
+    },
+    {
+      user: "Il a une vraie curiosité intellectuelle. Quand quelque chose l'intéresse vraiment, il est capable d'une concentration remarquable. Et il est attachant, les adultes l'apprécient.",
+      bot: "C'est important d'avoir ça en tête — cette capacité de concentration intense sur ce qui l'intéresse, c'est une vraie ressource. Est-ce que quelque chose aide déjà, même un peu, dans votre classe ?"
+    },
+    {
+      user: "Oui — quand je lui donne une consigne courte avec un exemple, et que je vérifie qu'il a compris avant de le laisser démarrer, ça se passe beaucoup mieux. Et son enseignante de l'an passé utilisait des rituels et des repères visuels fixes.",
+      bot: "C'est exactement le type d'information utile. Ces ajustements fonctionnent déjà — on peut s'en inspirer. Est-ce qu'il participe spontanément en classe, ou plutôt il attend qu'on l'interpelle ?"
     },
     {
       user: "Il ne lève jamais la main, mais quand je l'interpelle directement, il sait souvent répondre. Il est beaucoup dans la lune.",
@@ -1799,14 +1824,15 @@ Quand vous êtes prêt·e, dites-moi ce qui vous amène.`, true);
     obs: {
       histoire: "décroche souvent, reste en retrait lors des travaux de groupe, se met en colère quand une tâche change sans prévenir",
       participation: "ne lève jamais la main spontanément, beaucoup dans la lune, sait répondre quand interpellé directement",
-      consignes: "consignes longues le perdent, comprend mieux quand on montre un exemple concret, comprend mieux avec support visuel",
-      autonomie: "besoin d'être relancé pour démarrer, démarre difficilement seul, a besoin qu'on soit là pour commencer",
-      social: "2-3 copains avec qui il s'entend bien, évite les grands groupes, quelques liens positifs avec des pairs",
+      consignes: "consignes longues le perdent, comprend mieux quand on montre un exemple concret, support visuel aide",
+      autonomie: "besoin d'être relancé, ne démarre pas seul, a besoin qu'on soit là pour commencer",
+      social: "2-3 copains avec qui il s'entend bien, évite les grands groupes",
       transitions: "supporte mal les changements, se dérègle lors des transitions, s'énerve si le changement est trop abrupt",
-      bienetre: "souvent fatigué l'après-midi, s'effondre sur les longues tâches, stressé et tendu sauf dans ses moments de motivation, motivé pour les sciences et les activités manuelles",
+      bienetre: "souvent fatigué l'après-midi, s'effondre sur les longues tâches, stressé et tendu, motivé pour les sciences et les activités manuelles",
       langue: "francophone natif, pas de barrière linguistique",
-      forces: "motivé pour les sciences et les activités manuelles, réussit quand on lui montre un exemple, comprend mieux avec support visuel, enseignante précédente utilisait des rituels et repères visuels fixes avec succès",
-      complement: "l'enseignante de l'an passé utilisait beaucoup de rituels et de repères visuels — Léo était beaucoup plus apaisé dans sa classe"
+      forces: "curiosité intellectuelle réelle, concentration remarquable quand il est intéressé, attachant, les adultes l'apprécient, motivé pour les sciences et les activités manuelles",
+      appuisExistants: "consigne courte avec exemple et vérification de compréhension fonctionne bien, enseignante précédente utilisait des rituels et repères visuels fixes avec succès",
+      complement: "si on anticipe les transitions et qu'on structure les étapes, Léo peut vraiment s'engager"
     },
     scores: {}
   };
