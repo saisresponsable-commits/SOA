@@ -1071,152 +1071,177 @@ function buildAnalysis() {
   const p = d.pseudo;
   const t = (d.typesBesoin || []).join(' ').toLowerCase();
 
-  const asavoir = [];
-  const vigilance = [];
+  const asavoir    = [];
+  const vigilance  = [];
+  const hypotheses = [];
   const signauxAlerte = [];
 
-  // --- À SAVOIR ---
-  if (d.diagnostic && d.diagnostic !== 'Aucune démarche' && d.diagnostic !== 'Je ne sais pas') {
-    const types = d.typesBesoin.length ? ` (${d.typesBesoin.join(', ')})` : '';
-    asavoir.push(`Situation diagnostique : ${d.diagnostic}${types}. Ces éléments orientent les pistes proposées.`);
-  }
-  if (/participe|répond|actif|lève\s+la\s+main|volontaire/i.test(obs.participation)) {
-    asavoir.push(`${p} montre des capacités de participation dans certains contextes — un appui à valoriser et à renforcer.`);
-  }
-  if (/motivé|apprécie|aime|enthousiaste|plaisir|sciences|manuel|art|sport/i.test(obs.bienetre)) {
-    asavoir.push(`Des domaines ou activités semblent susciter une motivation réelle chez ${p} — ces leviers sont précieux pour construire les aménagements.`);
-  }
-  if (/exemple|visuel|schéma|démonstration/i.test(obs.consignes)) {
-    asavoir.push(`${p} semble mieux comprendre avec des exemples concrets ou des supports visuels — une piste directement exploitable.`);
-  }
-  if (/ami|copain|lien|s.entend\s+bien/i.test(obs.social)) {
-    asavoir.push(`Des liens positifs avec certains pairs existent — ils peuvent constituer un appui social et pédagogique (pair-aidance).`);
-  }
-  if (obs.complement && obs.complement.length > 5) {
-    asavoir.push(`Précision apportée : "${obs.complement}"`);
-  }
+  // ── SCORES locaux pour les conditions ──
+  const partNeg  = matchNeg(obs.participation || '', /retrait|lune|décroché|absent|jamais|ne\s+participe|invisible/i);
+  const consNeg  = matchNeg(obs.consignes || '', /perd|ne\s+comprend|difficile|perdu|long|complexe/i);
+  const autNeg   = matchNeg(obs.autonomie || '', /ne\s+démarre\s+pas|relancé|bloqué|ne\s+peut\s+pas/i);
+  const bienNeg  = matchNeg(obs.bienetre || '', /stress|fatigué|anxieux|tendu|découragé|pleure|frustration|épuisé/i);
+  const transNeg = matchNeg(obs.transitions || '', /difficile|énerve|colère|refuse|lent|bloqué|abrupt|imprévu/i);
+  const langNeg  = /pas\s+sa\s+langue|barrière|primo|allophone|maternel.*non/i.test(obs.langue || '');
 
-  // --- ÊTRE VIGILANT ---
-  if (s.autonomie < 52) vigilance.push(`Les difficultés à démarrer seul·e ou à demander de l'aide méritent un soutien structuré et progressif.`);
-  if (s.social < 52) vigilance.push(`Les interactions sociales semblent fragilisées — à observer pour prévenir un isolement qui pourrait s'installer.`);
-  if (matchNeg(obs.transitions, /difficile|énerve|colère|refuse|bloqué/i)) {
-    vigilance.push(`Les transitions entre activités sont une zone de tension identifiée — les anticiper et les ritualiser pourrait faire une vraie différence.`);
-  }
-  if (s.bienetre < 48) vigilance.push(`Les signes de stress ou de fatigue observés méritent attention — ils peuvent impacter l'ensemble des apprentissages.`);
-  if (s.inclusion < 48) vigilance.push(`L'accès aux apprentissages semble limité par plusieurs facteurs cumulés — une révision des aménagements serait utile.`);
-  if (t.includes('tdah') && t.includes('anxieux')) {
-    vigilance.push(`La combinaison TDAH et anxiété peut créer une surcharge importante — les deux dimensions méritent d'être prises en compte simultanément.`);
-  }
-  if (!d.diagnostic || d.diagnostic === 'Aucune démarche') {
-    if (s.inclusion < 50 || s.autonomie < 50) {
-      vigilance.push(`Aucune évaluation n'est encore en cours malgré les difficultés observées — une concertation avec le centre PMS pourrait être une étape utile.`);
-    }
-  }
-
-  // --- SIGNAUX D'ALERTE ---
-  if (s.bienetre < 32) signaux.push(`Signes de détresse émotionnelle significatifs — un échange avec les parents et une consultation du centre PMS semblent importants.`);
-  if (s.social < 30) signaux.push(`Isolement social marqué et persistant — une observation approfondie et un échange en équipe sont recommandés.`);
-  if (matchNeg(obs.bienetre, /épuisé|s.effondre|ne\s+supporte\s+plus|abandonne|détresse|pleure\s+souvent/i)) {
-    signauxAlerte.push(`Des signes d'épuisement scolaire ou de souffrance visible ont été mentionnés — une attention urgente est nécessaire.`);
-  }
-  if (t.includes('tsa') && matchNeg(obs.transitions, /panique|crise|refuse|bloqué/i)) {
-    signauxAlerte.push(`Les réactions aux transitions semblent particulièrement intenses — une consultation spécialisée pourrait être envisagée.`);
-  }
-
-  const pistes = getPistesForProfile(d.typesBesoin, obs);
-  const ctx = getTroubleContext(d.typesBesoin, obs);
-  const signaux = detectSignaux(obs);
-
-  // Hypothèses issues des signaux observationnels (prioritaires — viennent des mots de l'enseignant)
-  signaux.hypothesesInferees.forEach(h => {
+  // ── MOTEUR SIGNAUX (lecture fonctionnelle depuis les mots de l'enseignant) ──
+  const signauxDetectes = detectSignaux(obs);
+  signauxDetectes.hypothesesInferees.forEach(h => {
     if (!hypotheses.includes(h)) hypotheses.push(h);
   });
 
+  // ── CONTEXTE TROUBLE (forces, vigilances, dimensions depuis le diagnostic) ──
+  const ctx = getTroubleContext(d.typesBesoin, obs);
+
+  // ── À SAVOIR ──
+  if (d.diagnostic && d.diagnostic !== 'Aucune démarche en cours' && d.diagnostic !== 'Je ne sais pas') {
+    const types = d.typesBesoin.length ? ` (${d.typesBesoin.join(', ')})` : '';
+    asavoir.push(`Situation diagnostique : ${d.diagnostic}${types}. Ces éléments orientent les pistes proposées.`);
+  }
+  if (obs.forces && obs.forces.length > 5) {
+    asavoir.push(`Appuis identifiés : ${obs.forces.substring(0, 120)}${obs.forces.length > 120 ? '…' : ''}`);
+  }
+  if (/participe|répond|actif|lève\s+la\s+main|volontaire/i.test(obs.participation || '')) {
+    asavoir.push(`${p} montre des capacités de participation dans certains contextes — un appui à valoriser.`);
+  }
+  if (/motivé|apprécie|aime|enthousiaste|plaisir|sciences|manuel|art|sport/i.test(obs.bienetre || '')) {
+    asavoir.push(`Des domaines semblent susciter une motivation réelle — des leviers précieux pour les aménagements.`);
+  }
+  if (/exemple|visuel|schéma|démonstration|montre/i.test(obs.consignes || '')) {
+    asavoir.push(`Les exemples concrets et les supports visuels semblent faciliter la compréhension — une piste directement exploitable.`);
+  }
+  if (/ami|copain|lien|s.entend\s+bien/i.test(obs.social || '')) {
+    asavoir.push(`Des liens positifs avec certains pairs existent — ils peuvent constituer un appui social et pédagogique.`);
+  }
+  if (d.age) {
+    asavoir.push(`Âge : ${d.age} — à prendre en compte dans la lecture développementale de la situation.`);
+  }
+
   // Dimensions actives (union signaux + troubles)
-  const dimsActives = [...new Set([...ctx.dimensionsActives, ...signaux.dimsInferees.map(d => (DIMENSIONS_OBSERVATION[d]||{}).label||d)])];
+  const dimsActives = [...new Set([
+    ...ctx.dimensionsActives,
+    ...signauxDetectes.dimsInferees.map(dim => (DIMENSIONS_OBSERVATION[dim] || {}).label || dim)
+  ])];
   if (dimsActives.length > 0) {
     asavoir.push(`Dimensions fonctionnelles identifiées : ${dimsActives.join(', ')}.`);
   }
-
-  // Forces issues des troubles déclarés
   if (ctx.forcesGlobales.length > 0) {
     asavoir.push(`Forces possibles associées au profil : ${ctx.forcesGlobales.join(', ')}.`);
   }
-
-  // Vigilances spécifiques aux troubles
-  ctx.vigilancesGlobales.forEach(v => {
-    if (!vigilance.some(e => e.includes(v.substring(0, 20)))) {
-      vigilance.push(v.charAt(0).toUpperCase() + v.slice(1) + '.');
-    }
-  });
-
-  // --- BIEN-ÊTRE ---
-  let bien_etre_detail = '';
-  if (s.bienetre < 35) {
-    bien_etre_detail = `${p} semble traverser une période de tension ou de surcharge importante. Les signaux observés méritent une attention prioritaire — identifier les moments où ${p} semble le plus apaisé·e pourrait aider à construire des espaces de respiration dans la journée scolaire.`;
-  } else if (s.bienetre < 55) {
-    bien_etre_detail = `Le bien-être de ${p} semble fragile par moments. Il est utile d'identifier les activités qui semblent lui procurer du plaisir ou de la sécurité, et de les utiliser comme points d'appui pour renforcer sa confiance.`;
-  } else {
-    bien_etre_detail = `Globalement, ${p} semble trouver des moments de motivation et d'engagement dans la journée scolaire. Ces appuis sont précieux et méritent d'être cultivés dans la construction des aménagements.`;
+  if (obs.complement && obs.complement.length > 5) {
+    asavoir.push(`Précision apportée par l'enseignant : "${obs.complement.substring(0, 150)}"`);
   }
 
-  // --- LINGUISTIQUE ---
-  const linguistique_detail = s.langue >= 78
-    ? `La langue d'enseignement ne semble pas constituer une barrière pour ${p}. Les difficultés observées sont à chercher dans d'autres dimensions.`
-    : `La dimension linguistique pourrait jouer un rôle dans certaines des difficultés observées. Il vaut la peine de distinguer soigneusement ce qui relève de la maîtrise de la langue de ce qui relève d'autres facteurs — pour ne pas confondre les deux et proposer un soutien adapté.`;
-
-  // Hypothèses pédagogiques — croisement profil x observations x appuis
-  const hypotheses = [];
-  if (obs.transitions && matchNeg(obs.transitions, /difficile|énerve|imprévu|abrupt/i)) {
-    hypotheses.push(`Le besoin de prévisibilité semble central — les situations non anticipées paraissent coûteuses pour ${p}.`);
+  // ── HYPOTHÈSES PÉDAGOGIQUES supplémentaires (croisement observations + scores) ──
+  if (transNeg) {
+    hypotheses.push(`Le besoin de prévisibilité semble central — les changements non anticipés paraissent coûteux pour ${p}.`);
   }
-  if (consNeg && /visuel|exemple|schéma|montre/i.test(obs.consignes)) {
+  if (consNeg && /visuel|exemple|schéma|montre/i.test(obs.consignes || '')) {
     hypotheses.push(`${p} semble traiter mieux l'information par le canal visuel et concret que par le canal verbal seul.`);
   }
   if (autNeg && !bienNeg) {
     hypotheses.push(`Les difficultés d'autonomie pourraient relever davantage d'un manque de structuration de la tâche que d'un manque de motivation.`);
   }
   if (bienNeg && partNeg) {
-    hypotheses.push(`Le retrait observé pourrait être une stratégie d'évitement face à une surcharge cognitive ou émotionnelle — plutôt qu'un désintérêt.`);
+    hypotheses.push(`Le retrait observé pourrait être une stratégie d'évitement face à une surcharge — plutôt qu'un désintérêt.`);
   }
   if (obs.forces && obs.forces.length > 5) {
-    hypotheses.push(`Les contextes favorables décrits (${obs.forces.substring(0,60)}…) suggèrent que ${p} dispose de vraies ressources — à partir desquelles construire.`);
+    hypotheses.push(`Les contextes favorables décrits suggèrent que ${p} dispose de vraies ressources — à partir desquelles construire.`);
   }
-  if (hypotheses.length === 0) {
-    hypotheses.push(`Au vu des observations, ${p} semble rencontrer des obstacles qui méritent d'être explorés de façon plus approfondie avec l'équipe.`);
+  // Dédupliquer
+  const hypothesesUniq = [...new Set(hypotheses)].slice(0, 5);
+
+  // ── ÊTRE VIGILANT ──
+  if (s.autonomie < 52) vigilance.push(`Les difficultés à démarrer seul·e ou à demander de l'aide méritent un soutien structuré et progressif.`);
+  if (s.social < 52)    vigilance.push(`Les interactions sociales semblent fragilisées — à observer pour prévenir un isolement progressif.`);
+  if (transNeg)         vigilance.push(`Les transitions sont une zone de tension identifiée — les anticiper et les ritualiser pourrait faire une vraie différence.`);
+  if (s.bienetre < 48)  vigilance.push(`Les signes de stress ou de fatigue méritent attention — ils peuvent impacter l'ensemble des apprentissages.`);
+  if (s.inclusion < 48) vigilance.push(`L'accès aux apprentissages semble limité par plusieurs facteurs cumulés — une révision des aménagements serait utile.`);
+  if (t.includes('tdah') && (t.includes('anxieux') || t.includes('anxiété'))) {
+    vigilance.push(`La combinaison TDAH et anxiété peut créer une surcharge importante — les deux dimensions méritent d'être prises en compte simultanément.`);
+  }
+  if (!d.diagnostic || d.diagnostic === 'Aucune démarche en cours') {
+    if (s.inclusion < 50 || s.autonomie < 50) {
+      vigilance.push(`Aucune évaluation en cours malgré les difficultés observées — une concertation avec le centre PMS pourrait être une étape utile.`);
+    }
+  }
+  // Vigilances spécifiques aux troubles détectés
+  ctx.vigilancesGlobales.forEach(v => {
+    const vCap = v.charAt(0).toUpperCase() + v.slice(1) + '.';
+    if (!vigilance.some(e => e.includes(v.substring(0, 20)))) vigilance.push(vCap);
+  });
+
+  // ── SIGNAUX D'ALERTE ──
+  if (s.bienetre < 32) signauxAlerte.push(`Signes de détresse émotionnelle significatifs — un échange avec les parents et le centre PMS semble important.`);
+  if (s.social < 30)   signauxAlerte.push(`Isolement social marqué et persistant — une observation approfondie et un échange en équipe sont recommandés.`);
+  if (matchNeg(obs.bienetre || '', /épuisé|s.effondre|ne\s+supporte\s+plus|abandonne|détresse|pleure\s+souvent/i)) {
+    signauxAlerte.push(`Des signes d'épuisement scolaire ou de souffrance visible ont été mentionnés — une attention urgente est nécessaire.`);
+  }
+  if (t.includes('tsa') && matchNeg(obs.transitions || '', /panique|crise|refuse|bloqué/i)) {
+    signauxAlerte.push(`Les réactions aux transitions semblent particulièrement intenses — une consultation spécialisée pourrait être envisagée.`);
   }
 
-  // Conclusion adaptée selon la demande
+  // ── PISTES ──
+  const pistes = getPistesForProfile(d.typesBesoin, obs);
+
+  // ── BIEN-ÊTRE ──
+  let bien_etre_detail = '';
+  if (s.bienetre < 35) {
+    bien_etre_detail = `${p} semble traverser une période de tension ou de surcharge importante. Les signaux observés méritent une attention prioritaire — identifier les moments où ${p} semble le plus apaisé·e pourrait aider à construire des espaces de respiration dans la journée scolaire.`;
+  } else if (s.bienetre < 55) {
+    bien_etre_detail = `Le bien-être de ${p} semble fragile par moments. Il est utile d'identifier les activités qui lui procurent plaisir ou sécurité, et de les utiliser comme points d'appui.`;
+  } else {
+    bien_etre_detail = `Globalement, ${p} semble trouver des moments de motivation et d'engagement. Ces appuis sont précieux et méritent d'être cultivés dans la construction des aménagements.`;
+  }
+
+  // ── LINGUISTIQUE ──
+  const linguistique_detail = s.langue >= 78
+    ? `La langue d'enseignement ne semble pas constituer une barrière pour ${p}. Les difficultés observées sont à chercher dans d'autres dimensions.`
+    : `La dimension linguistique pourrait jouer un rôle dans certaines des difficultés observées. Il vaut la peine de distinguer soigneusement ce qui relève de la maîtrise de la langue et ce qui relève d'autres facteurs.`;
+
+  // ── CONCLUSION ──
   let conclusion = '';
   if (d.demande && d.demande.includes('concertation')) {
     conclusion = `Cette fiche peut servir de base pour une discussion en équipe. Elle rassemble les observations, les hypothèses et les pistes — sans prétendre à l'exhaustivité. L'équipe connaît ${p} bien mieux que cet outil.`;
   } else if (d.demande && d.demande.includes('aménagements')) {
-    conclusion = `Les pistes proposées sont des points de départ à tester — pas des prescriptions. Commencez par une ou deux, observez l'effet, ajustez. C'est cette logique d'expérimentation progressive qui est la plus utile sur le terrain.`;
+    conclusion = `Les ajustements proposés sont des points de départ à tester — pas des prescriptions. Commencez par un ou deux, observez l'effet, ajustez. C'est cette logique d'expérimentation progressive qui est la plus utile sur le terrain.`;
   } else if (d.demande && d.demande.includes('comprendre')) {
-    conclusion = `Cette analyse tente de donner du sens à ce que vous observez — sans certitude. Les hypothèses proposées sont des pistes de lecture, à confronter avec votre propre connaissance de ${p} et avec l'équipe.`;
+    conclusion = `Cette analyse tente de donner du sens à ce que vous observez — sans certitude. Les hypothèses sont des pistes de lecture, à confronter avec votre propre connaissance de ${p} et avec l'équipe.`;
   } else {
     conclusion = `Cette analyse est une base de réflexion, pas une vérité définitive. Vous connaissez ${p} bien mieux que cet outil. Les pistes sont là pour ouvrir des possibilités — adaptez-les, partagez-les, faites confiance à votre regard professionnel.`;
   }
 
   return {
     type: 'analyse_finale',
-    hypotheses,
+    hypotheses: hypothesesUniq,
     indices: {
-      inclusion_pedagogique:    { score: s.inclusion, statut: getStatut(s.inclusion), explication: `Évaluation de l'accessibilité des apprentissages et de la participation active — dimensions : ${ctx.dimensionsActives.slice(0,3).join(', ') || 'générales'}.` },
-      participation_sociale:    { score: s.social,    statut: getStatut(s.social),    explication: `Basé sur la qualité des interactions avec les pairs et l'engagement collectif décrit.` },
-      autonomie:                { score: s.autonomie, statut: getStatut(s.autonomie), explication: `Basé sur la capacité à démarrer seul·e, gérer les transitions et demander de l'aide.` },
-      bien_etre:                { score: s.bienetre,  statut: getStatut(s.bienetre),  explication: `Basé sur les signes de stress, de fatigue, de surcharge et de motivation observés.` },
-      accessibilite_linguistique: { score: s.langue,  statut: getStatut(s.langue),   explication: `Basé sur la maîtrise de la langue d'enseignement et la compréhension des consignes.` }
+      inclusion_pedagogique:      { score: s.inclusion, statut: getStatut(s.inclusion), explication: `Évaluation de l'accessibilité des apprentissages et de la participation active — dimensions : ${dimsActives.slice(0,3).join(', ') || 'générales'}.` },
+      participation_sociale:      { score: s.social,    statut: getStatut(s.social),    explication: `Basé sur la qualité des interactions avec les pairs et l'engagement collectif décrit.` },
+      autonomie:                  { score: s.autonomie, statut: getStatut(s.autonomie), explication: `Basé sur la capacité à démarrer seul·e, gérer les transitions et demander de l'aide.` },
+      bien_etre:                  { score: s.bienetre,  statut: getStatut(s.bienetre),  explication: `Basé sur les signes de stress, de fatigue, de surcharge et de motivation observés.` },
+      accessibilite_linguistique: { score: s.langue,    statut: getStatut(s.langue),    explication: `Basé sur la maîtrise de la langue d'enseignement et la compréhension des consignes.` }
     },
-    asavoir, vigilance, pistes, bien_etre_detail, linguistique_detail, signaux_alerte: signauxAlerte, conclusion
+    asavoir, vigilance, pistes, bien_etre_detail, linguistique_detail,
+    signaux_alerte: signauxAlerte, conclusion
   };
 }
+
 
 // ============================================================
 // CONVERSATION TREE
 // ============================================================
 const QUESTIONS = {
-  context:           ()  => `Bonjour. Je suis là pour vous aider à réfléchir à une situation. Qu'est-ce qui vous amène aujourd'hui ? Décrivez-moi librement ce qui vous préoccupe.`,
+  context: () => `Bonjour. Je suis SOA — Soutien à l'Observation et aux Aménagements.
+
+Je suis là pour vous accompagner dans la réflexion autour d'un élève qui vous préoccupe. Ensemble, nous allons essayer de mieux comprendre ce qui se passe pour lui et d'identifier des pistes concrètes à tester en classe.
+
+Avant de commencer, quelques points importants :
+Je ne pose pas de diagnostic — je suis un outil de réflexion pédagogique, pas un professionnel de santé.
+Je ne remplace pas votre équipe, votre centre PMS ou un spécialiste.
+Je ne conserve aucune donnée — tout reste dans votre navigateur, uniquement le temps de notre échange.
+Merci d'utiliser un prénom fictif pour l'élève dont vous allez me parler.
+
+Quand vous êtes prêt·e — qu'est-ce qui vous amène aujourd'hui ?`,
   diagnostic:        (p) => `Je vois. Est-ce qu'un diagnostic ou une évaluation a déjà été fait pour ${p} — ou est-ce qu'on travaille uniquement sur l'observation pour l'instant ?`,
   moments_difficiles:(p) => `Merci. Dans quels moments de la journée ou de la semaine les difficultés de ${p} se voient-elles le plus ? Est-ce qu'il y a des situations qui semblent déclencher ou aggraver ce que vous observez ?`,
   moments_positifs:  (p) => `Et à l'inverse — quand est-ce que ça se passe mieux ? Quels sont les moments, les activités ou les contextes où ${p} semble plus à l'aise, plus engagé·e ?`,
@@ -1264,7 +1289,7 @@ function startApp() {
   initState();
   resetUI();
   setTimeout(() => {
-    addBotMessage(QUESTIONS.context());
+    addBotMessage(QUESTIONS.context(), true);
   }, 300);
 }
 
@@ -1544,10 +1569,10 @@ function showChoices(options, callback, multi = false) {
 // ============================================================
 // RENDER
 // ============================================================
-function addBotMessage(text) {
+function addBotMessage(text, isWelcome = false) {
   const container = document.getElementById('chatContainer');
   const msg = document.createElement('div');
-  msg.className = 'msg bot';
+  msg.className = 'msg bot' + (isWelcome ? ' welcome' : '');
   msg.innerHTML = `<div class="msg-avatar">S</div><div class="msg-bubble">${formatText(text)}</div>`;
   container.appendChild(msg);
   scrollToBottom();
@@ -1694,11 +1719,25 @@ function copyFiche(btn) {
 async function runDemo() {
   updateProgress(8);
 
+  // Message d'ouverture de SOA — avant même que l'enseignant parle
+  addBotMessage(`Bonjour. Je suis SOA — Soutien à l'Observation et aux Aménagements.
+
+Je suis là pour vous aider à réfléchir à la situation d'un élève qui vous préoccupe. Ensemble, on va essayer de mieux comprendre ce qui se passe pour lui, et d'identifier des pistes concrètes que vous pourrez tester en classe.
+
+Quelques choses importantes avant de commencer :
+Je ne pose pas de diagnostic — je suis un outil de réflexion pédagogique, pas un professionnel de santé.
+Je ne remplace pas votre équipe, votre centre PMS ou un spécialiste.
+Je ne garde aucune donnée — tout ce que vous partagez reste dans votre navigateur, le temps de notre échange.
+Merci d'utiliser un prénom fictif pour l'élève dont vous allez me parler.
+
+Quand vous êtes prêt·e, dites-moi ce qui vous amène.`, true);
+  await delay(600);
+
   // Conversation démo — reflète le nouveau flux S-O-A en 4 temps
   const exchanges = [
     {
       user: "Bonjour, j'enseigne en 3e primaire et j'ai un élève qui me préoccupe depuis la rentrée. Il décroche souvent, il reste en retrait dans les travaux de groupe, et il se met parfois en colère quand une activité change sans prévenir.",
-      bot: "Bonjour. Je vous remercie de prendre ce temps — décrire une situation, c'est déjà un premier pas utile. Quel prénom fictif voulez-vous utiliser pour cet élève ?"
+      bot: "Merci de me partager ça. Décrire une situation, c'est déjà un premier pas utile. Quel prénom fictif voulez-vous utiliser pour cet élève ?"
     },
     {
       user: "Je vais l'appeler Léo.",
