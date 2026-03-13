@@ -1693,47 +1693,83 @@ function copyFiche(btn) {
 // ============================================================
 async function runDemo() {
   updateProgress(8);
+
+  // Conversation démo — reflète le nouveau flux S-O-A en 4 temps
   const exchanges = [
-    { user:"Bonjour, j'ai un élève de 9 ans en 3e primaire qui me préoccupe vraiment en ce moment.", bot:"Bonjour. Je suis contente que vous preniez ce temps — parfois, le fait de mettre des mots sur une situation aide déjà à y voir plus clair. Qu'est-ce que vous observez avec lui en classe ?" },
-    { user:"Il s'appelle Léo — prénom fictif. Il décroche souvent pendant les consignes, reste en retrait lors des travaux de groupe, et se met parfois en colère quand une tâche change sans prévenir.", bot:"Je vois… Ce que vous décrivez — le décrochage, le retrait, les réactions aux changements — ça forme un tableau assez cohérent. Est-ce qu'un diagnostic ou une évaluation a déjà été fait pour Léo, ou est-ce qu'on est encore dans le flou ?" },
-    { user:"Oui, un TDAH a été diagnostiqué il y a 6 mois. Il n'a pas encore d'accompagnement formalisé en classe.", bot:"D'accord. Six mois sans accompagnement formalisé, ça peut laisser l'enseignant un peu seul face à la situation — est-ce que c'est ce que vous ressentez ? En tout cas, le contexte TDAH peut expliquer une partie de ce que vous observez. Comment se passe sa participation en classe ?" },
-    { user:"Il ne lève presque jamais la main spontanément. Mais quand je l'interpelle directement, il sait souvent répondre. Il est beaucoup dans la lune.", bot:"C'est intéressant — il répond quand on l'interpelle, mais n'entre pas spontanément. Ça pourrait suggérer qu'il suit davantage qu'il n'y paraît, même si se lancer seul lui coûte beaucoup. Est-ce que les consignes lui posent problème aussi ?" },
-    { user:"Oui, les consignes longues le perdent complètement. Il comprend beaucoup mieux quand je lui montre un exemple concret.", bot:"L'exemple concret qui aide, la consigne longue qui perd — ça me parle. On pourrait peut-être là trouver des pistes assez simples. Mais avant, j'aimerais comprendre comment ça se passe avec les autres élèves ?" },
-    { user:"Il a 2-3 copains avec qui il s'entend bien, mais il évite les grands groupes. Les transitions sont vraiment difficiles.", bot:"Le fait qu'il ait quelques liens, c'est un vrai point d'appui. Les transitions difficiles reviennent souvent dans ce type de situation. Comment vous le sentez côté bien-être ?" },
-    { user:"Il semble souvent fatigué, surtout l'après-midi. Il est motivé pour les activités manuelles ou scientifiques. Le reste du temps il paraît stressé.", bot:"Les sciences et les activités manuelles comme points d'accroche — c'est précieux à garder en tête. Une dernière chose : la langue d'enseignement, ça ne pose pas de problème pour lui ?" },
-    { user:"Non, il est francophone natif. Pas de barrière linguistique.", bot:"Bien, ça simplifie la lecture. Je crois qu'on a bien fait le tour — mais avant que je prépare l'analyse, est-ce qu'il y a quelque chose sur Léo que vous n'avez pas encore pu dire ?" },
-    { user:"Oui — son enseignante de l'année dernière m'a dit qu'il était beaucoup plus apaisé dans sa classe. Elle utilisait beaucoup de rituels et de repères visuels.", bot:"C'est vraiment utile à savoir — et c'est une piste concrète. Si ça a fonctionné l'an dernier, ça vaut la peine d'explorer dans cette direction. Je prends ça en compte dans l'analyse." },
+    {
+      user: "Bonjour, j'enseigne en 3e primaire et j'ai un élève qui me préoccupe depuis la rentrée. Il décroche souvent, il reste en retrait dans les travaux de groupe, et il se met parfois en colère quand une activité change sans prévenir.",
+      bot: "Bonjour. Je vous remercie de prendre ce temps — décrire une situation, c'est déjà un premier pas utile. Quel prénom fictif voulez-vous utiliser pour cet élève ?"
+    },
+    {
+      user: "Je vais l'appeler Léo.",
+      bot: "Bien. Qu'est-ce que vous aimeriez obtenir à l'issue de notre échange — mieux comprendre ce qui se passe pour lui, trouver des aménagements concrets, préparer une concertation ?"
+    },
+    {
+      user: "Surtout trouver des aménagements que je peux mettre en place maintenant, sans attendre.",
+      bot: "C'est clair. Léo a quel âge, et est-ce qu'un diagnostic ou une évaluation a déjà été fait pour lui ?"
+    },
+    {
+      user: "Il a 9 ans. Un TDAH a été posé il y a 6 mois, mais il n'y a pas encore d'accompagnement formalisé en classe.",
+      bot: "Je comprends — six mois sans cadre formalisé, ça laisse l'enseignant gérer seul. Dans quels moments de la journée les difficultés de Léo se voient-elles le plus ? Est-ce qu'il y a des déclencheurs que vous avez identifiés ?"
+    },
+    {
+      user: "Surtout lors des transitions entre activités — il met du temps à démarrer et s'énerve si le changement est trop abrupt. Et les longues tâches écrites l'après-midi, il s'effondre.",
+      bot: "C'est utile. Et à l'inverse — quand est-ce que ça se passe mieux pour lui ? Y a-t-il des contextes où il semble plus là, plus engagé ?"
+    },
+    {
+      user: "Il est vraiment motivé quand on fait des sciences ou des activités manuelles. Et j'ai remarqué que quand je lui montre un exemple concret avant de démarrer, il comprend beaucoup mieux les consignes.",
+      bot: "C'est une observation très exploitable — l'exemple concret comme point d'ancrage, les sciences comme levier. Est-ce qu'il participe spontanément en classe, ou plutôt il attend qu'on l'interpelle ?"
+    },
+    {
+      user: "Il ne lève jamais la main, mais quand je l'interpelle directement, il sait souvent répondre. Il est beaucoup dans la lune.",
+      bot: "Ça m'évoque quelque chose d'important : il suit davantage qu'il n'y paraît, mais s'auto-activer lui coûte beaucoup. Et côté relations avec les autres ?"
+    },
+    {
+      user: "Il a 2-3 copains avec qui ça se passe bien. Mais il évite les grands groupes. Il semble souvent fatigué, stressé, sauf dans ses moments de motivation.",
+      bot: "Ces liens existent — c'est un vrai appui. La langue d'enseignement, ce n'est pas un obstacle pour lui ?"
+    },
+    {
+      user: "Non, il est francophone natif.",
+      bot: "Bien. Avant que je prépare l'analyse — est-ce qu'il y a quelque chose d'important sur Léo que vous n'avez pas encore pu dire ?"
+    },
+    {
+      user: "Oui, une chose : son enseignante de l'an passé m'a dit qu'il était beaucoup plus apaisé dans sa classe. Elle utilisait beaucoup de rituels et de repères visuels fixes.",
+      bot: "C'est une information précieuse et concrète — si ça a fonctionné, c'est un vrai point de départ. Je prends ça en compte. Je prépare l'analyse."
+    },
   ];
 
   for (const ex of exchanges) {
     addUserMessage(ex.user);
-    await delay(300);
+    await delay(280);
     addBotMessage(ex.bot);
-    await delay(250);
+    await delay(220);
   }
 
-  await delay(400);
-  addBotMessage("Je prépare l'analyse complète…");
-  await delay(600);
+  await delay(500);
+  addBotMessage("Je croise les observations, les signaux identifiés et le profil TDAH pour construire l'analyse…");
+  await delay(800);
 
-  // Inject demo state for scoring
+  // État injecté — riche en langage naturel pour activer SIGNAUX_OBSERVATION
   state.data = {
-    pseudo:'Léo', niveau:'3e-4e primaire', age:'9 ans',
-    diagnostic:'Oui, un diagnostic est posé', typesBesoin:['TDAH'],
-    demande:'Trouver des aménagements concrets',
-    obs:{
-      histoire:"décroche souvent, retrait en groupe, colère lors des changements imprévus",
-      participation:"ne lève presque jamais la main, dans la lune, répond si interpellé directement",
-      consignes:"consignes longues le perdent, comprend mieux avec exemple concret",
-      autonomie:"a besoin d'être relancé, démarre difficilement seul",
-      social:"2-3 copains, évite les grands groupes",
-      transitions:"difficiles, s'énerve si changement abrupt ou imprévu",
-      bienetre:"souvent fatigué, motivé pour sciences et activités manuelles, stressé sinon",
-      langue:"francophone natif, pas de barrière linguistique",
-      forces:"très motivé en sciences et activités manuelles, comprend bien avec exemples concrets, enseignante précédente utilisait rituels et repères visuels avec succès",
-      complement:"l'enseignante précédente utilisait beaucoup de rituels et repères visuels — il était beaucoup plus apaisé dans sa classe"
+    pseudo: 'Léo',
+    niveau: '3e-4e primaire',
+    age: '9 ans',
+    diagnostic: 'Oui, un diagnostic est posé',
+    typesBesoin: ['TDAH'],
+    demande: 'Trouver des aménagements concrets',
+    obs: {
+      histoire: "décroche souvent, reste en retrait lors des travaux de groupe, se met en colère quand une tâche change sans prévenir",
+      participation: "ne lève jamais la main spontanément, beaucoup dans la lune, sait répondre quand interpellé directement",
+      consignes: "consignes longues le perdent, comprend mieux quand on montre un exemple concret, comprend mieux avec support visuel",
+      autonomie: "besoin d'être relancé pour démarrer, démarre difficilement seul, a besoin qu'on soit là pour commencer",
+      social: "2-3 copains avec qui il s'entend bien, évite les grands groupes, quelques liens positifs avec des pairs",
+      transitions: "supporte mal les changements, se dérègle lors des transitions, s'énerve si le changement est trop abrupt",
+      bienetre: "souvent fatigué l'après-midi, s'effondre sur les longues tâches, stressé et tendu sauf dans ses moments de motivation, motivé pour les sciences et les activités manuelles",
+      langue: "francophone natif, pas de barrière linguistique",
+      forces: "motivé pour les sciences et les activités manuelles, réussit quand on lui montre un exemple, comprend mieux avec support visuel, enseignante précédente utilisait des rituels et repères visuels fixes avec succès",
+      complement: "l'enseignante de l'an passé utilisait beaucoup de rituels et de repères visuels — Léo était beaucoup plus apaisé dans sa classe"
     },
-    scores:{}
+    scores: {}
   };
 
   const data = buildAnalysis();
