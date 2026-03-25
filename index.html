@@ -238,13 +238,32 @@
 
 <script>
 // ============================================================
-// TROUBLES & DIMENSIONS DB
+// STATE
+// ============================================================
+let state = {};
+let ficheContent = '';
+
+function initState() {
+  state = {
+    step: 'context',
+    stepNum: 1,
+    data: {
+      pseudo: 'l\'élève', niveau: '', age: '',
+      diagnostic: '', typesBesoin: [],
+      obs: { histoire: '', participation: '', forces: '', appuisExistants: '', consignes: '', autonomie: '', social: '', transitions: '', bienetre: '', langue: '', complement: '' },
+      scores: { inclusion: 0, social: 0, autonomie: 0, bienetre: 0, langue: 0 },
+      skipConsignes: false, skipAutonomie: false, skipSocial: false, skipBienetre: false
+    }
+  };
+}
+
+// ============================================================
+// DB TROUBLES & PISTES
 // ============================================================
 const TROUBLES_DB = {
-  tdah: { id: "tdah", label: "TDAH", aliases: ["tdah","attention","hyperactivité","impulsivité"], famille: "neurodéveloppement", amenagements: { consignes: ["Une consigne à la fois","Reformuler"], supports: ["Timer","Checklist"], organisation: ["Pauses","Tâches courtes"], environnement: ["Réduire distracteurs"] } },
-  tsa: { id: "tsa", label: "TSA", aliases: ["tsa","autisme"], famille: "neurodéveloppement", amenagements: { consignes: ["Explicite","Pas d'implicite"], supports: ["Planning visuel"], organisation: ["Routines"], environnement: ["Espace calme"] } },
-  dyslexie: { id: "dyslexie", label: "Dyslexie", aliases: ["dyslexie","lecture"], famille: "apprentissages", amenagements: { consignes: ["Audio","Police aérée"], supports: ["Synthèse vocale"], organisation: ["Tiers-temps"], environnement: ["Pas de lecture publique"] } },
-  anxiete: { id: "anxiete", label: "Anxiété", aliases: ["anxiété","stress","peur"], famille: "émotionnel", amenagements: { consignes: ["Rassurer","Clarté"], supports: ["Plan de travail"], organisation: ["Fractionner"], environnement: ["Sécurité"] } }
+  tdah: { id: "tdah", label: "TDAH", aliases: ["tdah","attention","hyperactivité"], amenagements: { consignes: ["Une consigne à la fois","Reformuler"], supports: ["Timer","Checklist"], organisation: ["Pauses","Tâches courtes"], environnement: ["Réduire distracteurs"] } },
+  tsa: { id: "tsa", label: "TSA", aliases: ["tsa","autisme"], amenagements: { consignes: ["Explicite","Pas d'implicite"], supports: ["Planning visuel"], organisation: ["Routines"], environnement: ["Espace calme"] } },
+  anxiete: { id: "anxiete", label: "Anxiété", aliases: ["anxiété","stress","peur"], amenagements: { consignes: ["Rassurer","Clarté"], supports: ["Plan de travail"], organisation: ["Fractionner"], environnement: ["Sécurité"] } }
 };
 
 const GEN_PISTES = {
@@ -260,134 +279,8 @@ const SIGNAUX_OBSERVATION = {
 };
 
 // ============================================================
-// STATE
+// MOTEURS LOGIQUES
 // ============================================================
-let state = {};
-
-function initState() {
-  state = {
-    step: 'context',
-    stepNum: 1,
-    data: {
-      pseudo: 'l\'élève', niveau: '', age: '', diagnostic: '', typesBesoin: [],
-      obs: { histoire: '', participation: '', forces: '', appuisExistants: '', consignes: '', autonomie: '', social: '', transitions: '', bienetre: '', langue: '', complement: '' },
-      skipConsignes: false, skipAutonomie: false, skipSocial: false, skipBienetre: false
-    }
-  };
-}
-
-// ============================================================
-// LOGIQUE CORE
-// ============================================================
-function processInput(text) {
-  const step = state.step; const t = text.toLowerCase();
-  
-  switch(step) {
-    case 'context':
-      state.data.obs.histoire = text;
-      // SKIP LOGIC
-      if (/ami|seul|isolé|copain/i.test(t)) state.data.skipSocial = true;
-      if (/consigne|comprend|instruction/i.test(t)) state.data.skipConsignes = true;
-      if (/démarre|seul|bloqué/i.test(t)) state.data.skipAutonomie = true;
-      if (/stress|fatigué|motivé/i.test(t)) state.data.skipBienetre = true;
-      
-      state.step = 'pseudo'; updateProgress(1);
-      setTimeout(() => addBotMessage(`Pour préserver l'anonymat, quel prénom fictif donnerons-nous à l'élève ?`), 400);
-      break;
-
-    case 'pseudo':
-      state.data.pseudo = text.trim().split(/\s+/)[0] || "l'élève";
-      state.step = 'demande'; updateProgress(1);
-      setTimeout(() => {
-        addBotMessage(`Bien. Quel est votre objectif prioritaire pour ${state.data.pseudo} ?`);
-        showChoices(['Mieux comprendre', 'Aménagements concrets', 'Concertation'], (c) => {
-          state.data.demande = c; addUserMessage(c);
-          state.step = 'niveau'; updateProgress(2);
-          setTimeout(() => {
-            addBotMessage(`Dans quel niveau scolaire est l'élève ?`);
-            showChoices(['Maternelle', 'Primaire', 'Secondaire'], (n) => {
-              state.data.niveau = n; addUserMessage(n);
-              state.step = 'age';
-              setTimeout(() => {
-                addBotMessage(`Son âge ?`);
-                showChoices(['4-6 ans', '7-9 ans', '10-12 ans', '13-15 ans', '16+'], (a) => {
-                  state.data.age = a; addUserMessage(a);
-                  state.step = 'diagnostic'; updateProgress(3);
-                  setTimeout(() => {
-                    addBotMessage(`Y a-t-il un diagnostic posé ?`);
-                    showChoices(['Oui', 'En cours', 'Suspecté', 'Aucun'], (d) => {
-                      state.data.diagnostic = d; addUserMessage(d);
-                      if (d === 'Oui' || d === 'En cours') {
-                        setTimeout(() => {
-                          addBotMessage(`Précisez les besoins :`);
-                          showChoices(['TDAH', 'TSA', 'Dys', 'Anxiété'], (tb) => {
-                            state.data.typesBesoin = Array.isArray(tb) ? tb : [tb];
-                            addUserMessage(state.data.typesBesoin.join(', '));
-                            advanceTo('moments_difficiles');
-                          }, true);
-                        }, 400);
-                      } else { advanceTo('moments_difficiles'); }
-                    });
-                  }, 400);
-                });
-              }, 400);
-            });
-          }, 400);
-        });
-      }, 400);
-      break;
-
-    case 'moments_difficiles': state.data.obs.transitions = text; advanceTo('moments_positifs'); break;
-    case 'moments_positifs': state.data.obs.bienetre = text; advanceTo('forces'); break;
-    case 'forces': state.data.obs.forces = text; advanceTo('appuisExistants'); break;
-    case 'appuisExistants': state.data.obs.appuisExistants = text; advanceTo('participation'); break;
-    case 'participation': state.data.obs.participation = text; advanceTo('consignes'); break;
-    case 'consignes': state.data.obs.consignes = text; advanceTo('autonomie'); break;
-    case 'autonomie': state.data.obs.autonomie = text; advanceTo('social'); break;
-    case 'social': state.data.obs.social = text; advanceTo('bienetre'); break;
-    case 'bienetre': state.data.obs.bienetre = text; advanceTo('langue'); break;
-    case 'langue': state.data.obs.langue = text; advanceTo('complement'); break;
-    case 'complement': state.data.obs.complement = text; advanceTo('final'); break;
-  }
-}
-
-function advanceTo(next) {
-  const stepsMap = { moments_difficiles:3, moments_positifs:4, forces:5, appuisExistants:5, participation:6, consignes:6, autonomie:7, social:7, bienetre:7, langue:8, complement:8, final:8 };
-  
-  // SKIP LOGIC
-  if (next === 'consignes' && state.data.skipConsignes) { advanceTo('autonomie'); return; }
-  if (next === 'autonomie' && state.data.skipAutonomie) { advanceTo('social'); return; }
-  if (next === 'social' && state.data.skipSocial) { advanceTo('bienetre'); return; }
-  if (next === 'bienetre' && state.data.skipBienetre) { advanceTo('langue'); return; }
-
-  state.step = next;
-  updateProgress(stepsMap[next] || 8);
-
-  if (next === 'final') {
-    setTimeout(() => {
-      addBotMessage("Analyse finale en cours...");
-      setTimeout(() => renderAnalysis(buildAnalysis()), 800);
-    }, 400);
-    return;
-  }
-
-  const p = state.data.pseudo;
-  const qMap = {
-    moments_difficiles: `Quand les difficultés sont-elles les plus fortes pour ${p} ?`,
-    moments_positifs: `Et quand est-ce que ça se passe mieux ?`,
-    forces: `Quelles sont ses ressources ou points forts ?`,
-    appuisExistants: `Qu'est-ce qui l'aide déjà ?`,
-    participation: `Comment est sa participation collective ?`,
-    consignes: `Comment réagit-il aux consignes ?`,
-    autonomie: `Peut-il démarrer seul ses exercices ?`,
-    social: `Comment sont ses relations avec les pairs ?`,
-    bienetre: `Comment le sentez-vous globalement (stressé, motivé) ?`,
-    langue: `La langue d'enseignement est-elle sa langue maternelle ?`,
-    complement: `Un dernier point à ajouter ?`
-  };
-  
-  if (qMap[next]) setTimeout(() => addBotMessage(qMap[next]), 400);
-}
 
 function detectSignaux(obs) {
   const texte = Object.values(obs).join(' ').toLowerCase();
@@ -404,40 +297,123 @@ function detectSignaux(obs) {
 function buildAnalysis() {
   const d = state.data; const sigs = detectSignaux(d.obs);
   const hypotheses = [...sigs.hyps];
-  
-  // INFERENCE SANS DIAGNOSTIC
   if (!d.diagnostic || d.diagnostic === 'Aucun') {
     if (sigs.dims.includes('attention')) hypotheses.push("Le profil suggère une sensibilité accrue à la surcharge cognitive immédiate.");
     if (sigs.dims.includes('emotionnel')) hypotheses.push("Le besoin de sécurisation affective semble être un prérequis à l'engagement tâche.");
   }
-
-  // PISTES
   const troubleIds = [];
   Object.values(TROUBLES_DB).forEach(t => { if(d.typesBesoin.includes(t.label)) troubleIds.push(t.id); });
-  
   const pistes = { consignes:[], supports:[], organisation:[], environnement:[] };
   troubleIds.forEach(id => {
     const am = TROUBLES_DB[id].amenagements;
     Object.keys(pistes).forEach(k => pistes[k].push(...(am[k] || [])));
   });
-  
   if (troubleIds.length === 0) {
     sigs.dims.forEach(dim => {
       const am = GEN_PISTES[dim] || {};
       Object.keys(pistes).forEach(k => pistes[k].push(...(am[k] || [])));
     });
   }
-
-  return { hypotheses, pistes };
+  return { hypotheses, pistes, conclusion: `Cette synthèse offre des pistes à tester progressivement.` };
 }
 
 // ============================================================
-// UI CORE
+// CONVERSATION FLOW
 // ============================================================
+
+function processInput(text) {
+  const step = state.step; const t = text.toLowerCase();
+  switch(step) {
+    case 'context':
+      state.data.obs.histoire = text;
+      if (/ami|seul|isolé|copain/i.test(t)) state.data.skipSocial = true;
+      if (/consigne|comprend|instruction/i.test(t)) state.data.skipConsignes = true;
+      if (/démarre|seul|bloqué/i.test(t)) state.data.skipAutonomie = true;
+      if (/stress|fatigué|motivé/i.test(t)) state.data.skipBienetre = true;
+      state.step = 'pseudo'; updateProgress(1);
+      setTimeout(() => addBotMessage(`Pour préserver l'anonymat, quel prénom fictif donnerons-nous à l'élève ?`), 400);
+      break;
+    case 'pseudo':
+      state.data.pseudo = text.trim().split(/\s+/)[0] || "l'élève";
+      state.step = 'demande'; updateProgress(1);
+      setTimeout(() => {
+        addBotMessage(`Bien. Quel est votre objectif prioritaire aujourd'hui ?`);
+        showChoices(['Comprendre l\'élève', 'Aménagements concrets', 'Concertation'], (c) => {
+          state.data.demande = c; addUserMessage(c); state.step = 'niveau'; updateProgress(2);
+          setTimeout(() => {
+            addBotMessage(`Dans quel niveau scolaire est ${state.data.pseudo} ?`);
+            showChoices(['Maternelle', 'Primaire', 'Secondaire'], (n) => {
+              state.data.niveau = n; addUserMessage(n); state.step = 'age';
+              setTimeout(() => {
+                addBotMessage(`Quel est son âge ?`);
+                showChoices(['4-6 ans', '7-9 ans', '10-12 ans', '13-15 ans', '16+'], (a) => {
+                  state.data.age = a; addUserMessage(a); state.step = 'diagnostic'; updateProgress(3);
+                  setTimeout(() => {
+                    addBotMessage(`Y a-t-il un diagnostic pour ${state.data.pseudo} ?`);
+                    showChoices(['Oui', 'En cours', 'Suspecté', 'Aucun'], (d) => {
+                      state.data.diagnostic = d; addUserMessage(d);
+                      if (d === 'Oui' || d === 'En cours') {
+                        setTimeout(() => {
+                          addBotMessage(`Précisez les besoins :`);
+                          showChoices(['TDAH', 'TSA', 'Dys', 'Anxiété'], (tb) => { state.data.typesBesoin = Array.isArray(tb) ? tb : [tb]; addUserMessage(state.data.typesBesoin.join(', ')); advanceTo('moments_difficiles'); }, true);
+                        }, 400);
+                      } else { advanceTo('moments_difficiles'); }
+                    });
+                  }, 400);
+                });
+              }, 400);
+            });
+          }, 400);
+        });
+      }, 400);
+      break;
+    case 'moments_difficiles': state.data.obs.transitions = text; advanceTo('moments_positifs'); break;
+    case 'moments_positifs': state.data.obs.bienetre = text; advanceTo('forces'); break;
+    case 'forces': state.data.obs.forces = text; advanceTo('appuisExistants'); break;
+    case 'appuisExistants': state.data.obs.appuisExistants = text; advanceTo('participation'); break;
+    case 'participation': state.data.obs.participation = text; advanceTo('consignes'); break;
+    case 'consignes': state.data.obs.consignes = text; advanceTo('autonomie'); break;
+    case 'autonomie': state.data.obs.autonomie = text; advanceTo('social'); break;
+    case 'social': state.data.obs.social = text; advanceTo('bienetre'); break;
+    case 'bienetre': state.data.obs.bienetre = text; advanceTo('langue'); break;
+    case 'langue': state.data.obs.langue = text; advanceTo('complement'); break;
+    case 'complement': state.data.obs.complement = text; advanceTo('final'); break;
+  }
+}
+
+function advanceTo(next) {
+  if (next === 'consignes' && state.data.skipConsignes) { advanceTo('autonomie'); return; }
+  if (next === 'autonomie' && state.data.skipAutonomie) { advanceTo('social'); return; }
+  if (next === 'social' && state.data.skipSocial) { advanceTo('bienetre'); return; }
+  if (next === 'bienetre' && state.data.skipBienetre) { advanceTo('langue'); return; }
+
+  state.step = next; updateProgress(next === 'final' ? 8 : (state.stepNum || 4));
+  if (next === 'final') { setTimeout(() => { addBotMessage("Analyse finale en cours..."); setTimeout(() => renderAnalysis(buildAnalysis()), 800); }, 400); return; }
+  const p = state.data.pseudo;
+  const qMap = {
+    moments_difficiles: `Quand les difficultés sont-elles les plus fortes pour ${p} ?`,
+    moments_positifs: `Et quand est-ce que ça se passe mieux ?`,
+    forces: `Quelles sont ses ressources ou points forts ?`,
+    appuisExistants: `Qu'est-ce qui l'aide déjà ?`,
+    participation: `Comment est sa participation collective ?`,
+    consignes: `Comment réagit-il aux consignes ?`,
+    autonomie: `Peut-il démarrer seul ses exercices ?`,
+    social: `Comment sont ses relations avec les pairs ?`,
+    bienetre: `Comment le sentez-vous globalement (stressé, motivé) ?`,
+    langue: `La langue d'enseignement est-elle sa langue maternelle ?`,
+    complement: `Un dernier point à ajouter ?`
+  };
+  if (qMap[next]) setTimeout(() => addBotMessage(qMap[next]), 400);
+}
+
+// ============================================================
+// UI & UTILS
+// ============================================================
+
 function startApp() { document.getElementById('landing').style.display = 'none'; document.getElementById('app').classList.add('active'); initState(); resetUI(); setTimeout(() => addBotMessage("Bonjour. Dites-moi ce qui vous amène aujourd'hui ?", true), 300); }
 function startDemo() { startApp(); runDemo(); }
-function goHome() { document.getElementById('app').classList.remove('active'); document.getElementById('landing').style.display = ''; }
 function resetApp() { initState(); resetUI(); setTimeout(() => addBotMessage("Bonjour. Dites-moi ce qui vous amène ?"), 300); }
+function goHome() { document.getElementById('app').classList.remove('active'); document.getElementById('landing').style.display = ''; }
 function resetUI() { document.getElementById('chatContainer').innerHTML = ''; updateProgress(0); }
 function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
 function sendMessage() { const i = document.getElementById('userInput'); const t = i.value.trim(); if (!t) return; i.value = ''; addUserMessage(t); processInput(t); }
@@ -467,49 +443,49 @@ function showChoices(opts, cb, multi = false) {
 }
 
 function renderAnalysis(data) {
-  const c = document.getElementById('chatContainer'); addBotMessage("Analyse terminée. Voici la fiche récapitulative :");
+  const c = document.getElementById('chatContainer'); addBotMessage("Analyse terminée.");
   const fw = document.createElement('div'); fw.className = 'fiche-wrapper';
   fw.innerHTML = `<div class="fiche"><div class="fiche-header"><h2>Fiche SOA</h2></div><div class="fiche-body">
     <div class="fiche-section"><div class="fiche-section-title">Hypothèses</div><ul>${data.hypotheses.map(h=>`<li>${h}</li>`).join('')}</ul></div>
-    <div class="fiche-section"><div class="fiche-section-title">Ajustements suggérés</div>
-      ${Object.entries(data.pistes).map(([k,v])=>v.length?`<strong>${k}</strong>:<ul>${v.slice(0,4).map(p=>`<li>${p}</li>`).join('')}</ul>`:'').join('')}
-    </div>
+    <div class="fiche-section"><div class="fiche-section-title">Ajustements</div>${Object.entries(data.pistes).map(([k,v])=>v.length?`<strong>${k}</strong>:<ul>${v.slice(0,3).map(p=>`<li>${p}</li>`).join('')}</ul>`:'').join('')}</div>
     <div class="fiche-section"><div class="fiche-section-title">Conseil Famille</div><p>Échangez avec les parents sur les points forts de l'élève avant d'aborder les pistes d'ajustements.</p></div>
   </div></div>`;
   c.appendChild(fw); scrollToBottom();
 }
 
 // ============================================================
-// DEMO
+// DEMO MULTI-PROFILS
 // ============================================================
 async function runDemo() {
   const delay = ms => new Promise(r => setTimeout(r, ms));
+  const profils = [
+    { nom: "Léo (Inattention)", initial: "Léo est souvent dans la lune, il ne démarre jamais ses exercices sans aide.", diag: "Aucun", forts: "Très créatif, adore les sciences.", diffs: "Transitions et démarrage." },
+    { nom: "Emma (Anxiété)", initial: "Emma est très stressée dès qu'il y a une évaluation. Elle reste isolée dans la cour.", diag: "Suspecté", forts: "Méticuleuse, aide pour ranger.", diffs: "Peur de l'échec." },
+    { nom: "Nathan (TDAH)", initial: "Nathan se lève tout le temps, il coupe la parole en classe.", diag: "Oui", besoin: "TDAH", forts: "Énergie incroyable, solutions originales.", diffs: "Attente et calme." }
+  ];
+  const p = profils[Math.floor(Math.random() * profils.length)];
+  addBotMessage(`*** DÉMO : ${p.nom} ***`);
+  await delay(800);
   const steps = [
-    { type: 'user', text: "Léo est souvent seul, il ne démarre jamais ses exercices sans mon aide." },
-    { type: 'bot', text: "Pour préserver l'anonymat, quel prénom fictif donnerons-nous ?" },
-    { type: 'user', text: "Léo." },
-    { type: 'bot', text: "Quel est l'objectif prioritaire ?" },
+    { type: 'user', text: p.initial },
+    { type: 'bot', text: "Quel prénom fictif ?" },
+    { type: 'user', text: p.nom.split(' ')[0] },
+    { type: 'bot', text: "Quel objectif ?" },
     { type: 'user', text: "Aménagements concrets." },
     { type: 'bot', text: "Niveau scolaire ?" },
     { type: 'user', text: "Primaire." },
     { type: 'bot', text: "Âge ?" },
     { type: 'user', text: "7-9 ans." },
     { type: 'bot', text: "Diagnostic ?" },
-    { type: 'user', text: "Aucun." },
-    { type: 'bot', text: "Quand les difficultés sont-elles les plus fortes ?" },
-    { type: 'user', text: "Lors des transitions et le matin au démarrage." },
-    { type: 'bot', text: "Et les points forts ?" },
-    { type: 'user', text: "Il est très créatif et adore les sciences." },
-    { type: 'bot', text: "Comment l'aider davantage ?" }
+    { type: 'user', text: p.diag }
   ];
-
+  if (p.besoin) { steps.push({ type: 'bot', text: "Besoins ?" }); steps.push({ type: 'user', text: p.besoin }); }
+  steps.push({ type: 'bot', text: "Difficultés fortes ?" }, { type: 'user', text: p.diffs }, { type: 'bot', text: "Points forts ?" }, { type: 'user', text: p.forts }, { type: 'bot', text: "Autre chose ?" });
   for(let s of steps) {
-    if(s.type === 'user') { addUserMessage(s.text); }
+    if(s.type === 'user') { addUserMessage(s.text); processInput(s.text); }
     else { addBotMessage(s.text); }
-    await delay(600);
+    await delay(800);
   }
-  // Finir la démo
-  renderAnalysis(buildAnalysis());
 }
 </script>
 </body>
