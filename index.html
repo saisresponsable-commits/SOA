@@ -200,7 +200,7 @@
           Commencer une analyse
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </button>
-        <button class="btn-demo" onclick="openDemoChooser()">
+        <button class="btn-demo" onclick="startDemo()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           Voir une fiche démo
         </button>
@@ -1944,20 +1944,30 @@ const DEMO_PROFILES = [
   }
 ];
 
-async async function runDemo(profileId = null) {
+function showDemoProfileChoices() {
+  const options = [
+    'Démo aléatoire',
+    ...DEMO_PROFILES.map(p => p.label)
+  ];
+
+  showChoices(options, (choice) => {
+    if (choice === 'Démo aléatoire') {
+      launchDemoProfile();
+      return;
+    }
+    const profile = DEMO_PROFILES.find(p => p.label === choice);
+    launchDemoProfile(profile ? profile.id : null);
+  });
+}
+
+async function launchDemoProfile(profileId = null) {
   updateProgress(8);
   const profile = profileId
     ? DEMO_PROFILES.find(p => p.id === profileId) || DEMO_PROFILES[0]
     : DEMO_PROFILES[Math.floor(Math.random() * DEMO_PROFILES.length)];
 
-  addBotMessage(`Bonjour. Je suis SOA — Soutien à l'Observation et aux Aménagements.
-
-Je vous propose ici une fiche démo à partir d'un profil simulé. Chaque démonstration peut s'appuyer sur une situation différente afin d'illustrer plusieurs types de besoins observés à l'école.
-
-Je ne pose pas de diagnostic. Je ne garde aucune donnée. Cette simulation sert uniquement à montrer le fonctionnement de l'outil.`, true);
-  await delay(450);
   addBotMessage(`Simulation en cours : ${profile.label}`);
-  await delay(350);
+  await delay(300);
 
   for (const [role, text] of profile.data.transcript) {
     if (role === 'user') addUserMessage(text);
@@ -1972,6 +1982,23 @@ Je ne pose pas de diagnostic. Je ne garde aucune donnée. Cette simulation sert 
   state.data = JSON.parse(JSON.stringify(profile.data));
   const data = buildAnalysis();
   renderAnalysis(data);
+}
+
+async function runDemo(profileId = null) {
+  addBotMessage(`Bonjour. Je suis SOA — Soutien à l'Observation et aux Aménagements.
+
+Je vous propose ici une fiche démo à partir d'un profil simulé. Chaque démonstration peut s'appuyer sur une situation différente afin d'illustrer plusieurs types de besoins observés à l'école.
+
+Je ne pose pas de diagnostic. Je ne garde aucune donnée. Cette simulation sert uniquement à montrer le fonctionnement de l'outil.`, true);
+  await delay(350);
+
+  if (profileId) {
+    launchDemoProfile(profileId);
+    return;
+  }
+
+  addBotMessage("Choisissez un profil de démonstration ci-dessous, ou lancez une version aléatoire.");
+  showDemoProfileChoices();
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
