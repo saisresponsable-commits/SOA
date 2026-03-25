@@ -155,6 +155,27 @@
     .chat-container{padding:20px 16px} .input-area{padding:16px} .indices-grid{margin-left:0} .choices-wrap{margin-left:0} .fiche-wrapper{margin-left:0} .alert-box{margin-left:0}
     .soa-method{padding:0 24px 32px;flex-direction:column;align-items:center} .soa-step{max-width:100%} .soa-connector{transform:rotate(90deg);padding:0}
   }
+
+
+.demo-modal { position:fixed; inset:0; display:none; z-index:1000; }
+.demo-modal.active { display:block; }
+.demo-modal-backdrop { position:absolute; inset:0; background:rgba(30,45,64,0.42); backdrop-filter:blur(2px); }
+.demo-modal-panel { position:relative; width:min(980px, calc(100vw - 32px)); max-height:calc(100vh - 48px); overflow:auto; margin:24px auto; background:var(--warm-white); border:1px solid var(--border); border-radius:24px; box-shadow:var(--shadow-lg); padding:28px; }
+.demo-modal-header { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:18px; }
+.demo-modal-kicker { font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--sage-dark); font-weight:600; margin-bottom:8px; }
+.demo-modal-title { font-family:'Fraunces',serif; font-size:30px; line-height:1.15; color:var(--navy); margin-bottom:8px; }
+.demo-modal-desc { color:var(--slate); font-size:15px; line-height:1.6; max-width:760px; }
+.demo-close { border:none; background:transparent; color:var(--muted); font-size:30px; line-height:1; cursor:pointer; padding:4px 8px; }
+.demo-random-wrap { margin-bottom:18px; }
+.demo-random-btn { width:100%; justify-content:center; }
+.demo-profile-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.demo-profile-card { text-align:left; border:1px solid var(--border); background:linear-gradient(180deg, #fff, #fbf7f2); border-radius:20px; padding:18px; cursor:pointer; transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease; box-shadow:0 6px 24px rgba(30,45,64,.06); }
+.demo-profile-card:hover { transform:translateY(-2px); box-shadow:0 12px 30px rgba(30,45,64,.10); border-color:var(--sage-light); }
+.demo-profile-tag { display:inline-block; padding:6px 10px; border-radius:999px; background:#eef5ef; color:var(--sage-dark); font-size:12px; font-weight:600; margin-bottom:10px; }
+.demo-profile-title { font-family:'Fraunces',serif; font-size:22px; color:var(--navy); margin-bottom:10px; }
+.demo-profile-text { color:var(--slate); font-size:14px; line-height:1.6; }
+@media (max-width: 820px) { .demo-profile-grid { grid-template-columns:1fr; } .demo-modal-panel { padding:20px; margin:16px auto; } .demo-modal-title { font-size:26px; } }
+
 </style>
 </head>
 <body>
@@ -179,7 +200,7 @@
           Commencer une analyse
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </button>
-        <button class="btn-demo" onclick="startDemo()">
+        <button class="btn-demo" onclick="openDemoChooser()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           Voir une fiche démo
         </button>
@@ -204,6 +225,45 @@
       <div class="landing-footer-item"><span class="footer-dot dot-navy"></span>SOA — Soutien à l'Observation et aux Aménagements</div>
       <div class="landing-footer-item"><span class="footer-dot dot-amber"></span>Outil pédagogique uniquement — je ne remplace pas un professionnel</div>
       <div class="landing-footer-item"><span class="footer-dot dot-green"></span>Pas de données nominatives — utilisez un prénom fictif</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- DEMO CHOOSER -->
+<div id="demoChooser" class="demo-modal" aria-hidden="true">
+  <div class="demo-modal-backdrop" onclick="closeDemoChooser()"></div>
+  <div class="demo-modal-panel" role="dialog" aria-modal="true" aria-labelledby="demoChooserTitle">
+    <div class="demo-modal-header">
+      <div>
+        <div class="demo-modal-kicker">Fiches de démonstration</div>
+        <h2 id="demoChooserTitle" class="demo-modal-title">Choisir un profil démo</h2>
+        <p class="demo-modal-desc">Vous pouvez lancer une simulation aléatoire, ou choisir manuellement un profil pour illustrer un type de situation précis.</p>
+      </div>
+      <button class="demo-close" type="button" onclick="closeDemoChooser()" aria-label="Fermer">×</button>
+    </div>
+    <div class="demo-random-wrap">
+      <button class="btn-primary demo-random-btn" type="button" onclick="startDemo()">
+        Lancer une démo aléatoire
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="M15 15 21 21"/><path d="M4 4l5 5"/></svg>
+      </button>
+    </div>
+    <div class="demo-profile-grid">
+      <button class="demo-profile-card" type="button" onclick="startDemo('entree_tache')">
+        <div class="demo-profile-tag">Profil 1</div>
+        <div class="demo-profile-title">Entrée dans la tâche / attention</div>
+        <div class="demo-profile-text">Élève qui ne démarre pas seul, décroche vite, mais progresse mieux avec une structuration claire.</div>
+      </button>
+      <button class="demo-profile-card" type="button" onclick="startDemo('anxiete_transitions')">
+        <div class="demo-profile-tag">Profil 2</div>
+        <div class="demo-profile-title">Anxiété / transitions / surcharge</div>
+        <div class="demo-profile-text">Élève fragilisée par les changements, qui a besoin d'anticipation, de repères et d'un cadre rassurant.</div>
+      </button>
+      <button class="demo-profile-card" type="button" onclick="startDemo('social_isolement')">
+        <div class="demo-profile-tag">Profil 3</div>
+        <div class="demo-profile-title">Social / isolement / communication</div>
+        <div class="demo-profile-text">Élève en décalage avec le groupe, plus à l'aise seul ou sur ses centres d'intérêt que dans les échanges spontanés.</div>
+      </button>
     </div>
   </div>
 </div>
@@ -1312,13 +1372,30 @@ function startApp() {
   }, 300);
 }
 
-function startDemo() {
+function openDemoChooser() {
+  const modal = document.getElementById('demoChooser');
+  if (modal) {
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+}
+
+function closeDemoChooser() {
+  const modal = document.getElementById('demoChooser');
+  if (modal) {
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+}
+
+function startDemo(profileId = null) {
+  closeDemoChooser();
   document.getElementById('landing').style.display = 'none';
   document.getElementById('app').classList.add('active');
   setupInputHandler();
   initState();
   resetUI();
-  runDemo();
+  runDemo(profileId);
 }
 
 function goHome() {
@@ -1745,113 +1822,154 @@ function copyFiche(btn) {
 }
 
 // ============================================================
-// DEMO
+// DEMO V5 — profils variés et cohérents
 // ============================================================
-async function runDemo() {
-  updateProgress(8);
+const DEMO_PROFILES = [
+  {
+    id: 'entree_tache',
+    label: "Profil démo 1 · Entrée dans la tâche / attention",
+    intro: "Bonjour, j'enseigne en 4e primaire et je m'interroge sur un élève qui semble souvent décrocher sans qu'on comprenne tout de suite pourquoi.",
+    data: {
+      pseudo: 'Lucas',
+      niveau: '3e-4e primaire',
+      age: '8-9 ans',
+      diagnostic: 'Des difficultés suspectées',
+      typesBesoin: ['Je préfère ne pas préciser'],
+      demande: 'Trouver des aménagements concrets',
+      obs: {
+        histoire: "Lucas décroche vite, attend beaucoup l'adulte et semble bloqué au moment de commencer son travail.",
+        transitions: "Les changements d'activité sont gérables, mais il lui faut souvent un rappel pour se remettre au travail.",
+        moments_positifs: "Quand on lui montre la première étape ou un exemple concret, il démarre mieux et peut aller au bout.",
+        forces: "Il comprend bien quand la situation est claire, il est curieux et apprécie les manipulations concrètes.",
+        appuisExistants: "Le guidage au départ, les exemples visuels et le découpage des consignes l'aident nettement.",
+        participation: "Il participe peu spontanément, mais sait répondre quand on le sollicite directement.",
+        consignes: "Les consignes longues ou trop globales le perdent; les formulations courtes fonctionnent mieux.",
+        autonomie: "Il ne démarre pas seul, attend souvent l'adulte et reste bloqué devant la feuille blanche.",
+        social: "Les relations avec les autres sont plutôt bonnes, sans difficulté marquée.",
+        bienetre: "Il paraît calme, mais souvent passif et vite fatigable quand la tâche demande un effort prolongé.",
+        langue: "Pas de difficulté particulière de langage ou de compréhension orale repérée.",
+        complement: "Le problème semble surtout apparaître au moment d'entrer dans l'activité, plus que dans la compréhension de fond."
+      },
+      transcript: [
+        ["user", "Bonjour, j'enseigne en 4e primaire et je m'interroge sur un élève qui semble souvent décrocher sans qu'on comprenne tout de suite pourquoi."],
+        ["bot", "Merci. Pour qu'on puisse en parler simplement, quel prénom fictif souhaitez-vous utiliser ?"],
+        ["user", "Je vais dire Lucas."],
+        ["bot", "Très bien. Qu'attendez-vous surtout de cet échange ?"],
+        ["user", "Trouver des aménagements concrets que je peux tester rapidement."],
+        ["bot", "D'accord. Dans quels moments les difficultés se voient-elles le plus ?"],
+        ["user", "Surtout au moment de commencer. Il reste devant sa feuille, regarde autour de lui et attend."],
+        ["bot", "Et à l'inverse, quand est-ce que cela se passe mieux ?"],
+        ["user", "Quand je lui montre un exemple précis ou quand la tâche est déjà amorcée."],
+        ["bot", "Merci. Je prends en compte ces éléments pour préparer la fiche démo."],
+      ]
+    }
+  },
+  {
+    id: 'anxiete_transitions',
+    label: "Profil démo 2 · Anxiété / transitions / surcharge",
+    intro: "Bonjour, je cherche à mieux comprendre une élève de primaire qui peut se dérégler très vite quand le cadre change.",
+    data: {
+      pseudo: 'Inès',
+      niveau: '5e-6e primaire',
+      age: '10-11 ans',
+      diagnostic: 'Une évaluation est en cours',
+      typesBesoin: ['Trouble anxieux'],
+      demande: "Préparer une concertation d'équipe",
+      obs: {
+        histoire: "Inès travaille correctement quand tout est prévisible, mais se crispe fortement lors des changements imprévus.",
+        transitions: "Les transitions sont très difficiles; elle se met en retrait, pleure parfois, ou s'oppose si le changement arrive trop vite.",
+        moments_positifs: "Quand la journée est annoncée clairement avec des repères visuels et un temps d'anticipation, elle est beaucoup plus disponible.",
+        forces: "Élève sérieuse, appliquée, qui veut bien faire et montre de belles compétences quand elle se sent en sécurité.",
+        appuisExistants: "L'anticipation, les routines stables, les supports visuels et la possibilité de poser une question avant le changement l'aident beaucoup.",
+        participation: "Elle participe quand le climat est rassurant, mais s'efface dès qu'elle sent une pression ou une imprévisibilité.",
+        consignes: "Les consignes sont comprises si elles sont calmes et stables; sous stress, elle semble ne plus pouvoir traiter l'information.",
+        autonomie: "L'autonomie est correcte dans un cadre connu, mais chute dès qu'il faut s'adapter rapidement.",
+        social: "Elle a quelques liens, mais peut se replier sur elle-même dans les moments de tension.",
+        bienetre: "Anxiété visible, tensions corporelles, fatigue en fin de journée et saturation quand plusieurs sollicitations arrivent en même temps.",
+        langue: "Pas de difficulté linguistique identifiée.",
+        complement: "Les difficultés semblent davantage liées au besoin de prévisibilité et de sécurité qu'à un manque de bonne volonté."
+      },
+      transcript: [
+        ["user", "Bonjour, je cherche à mieux comprendre une élève de primaire qui peut se dérégler très vite quand le cadre change."],
+        ["bot", "Merci. Quel prénom fictif voulez-vous utiliser pour cette élève ?"],
+        ["user", "Appelons-la Inès."],
+        ["bot", "Très bien. Qu'aimeriez-vous surtout obtenir à l'issue de l'échange ?"],
+        ["user", "Préparer une concertation d'équipe avec des éléments concrets."],
+        ["bot", "Dans quels moments les difficultés apparaissent-elles le plus ?"],
+        ["user", "Lors des changements d'activité ou quand quelque chose n'est pas prévu, elle peut pleurer ou se fermer complètement."],
+        ["bot", "Et quand est-ce que cela se passe mieux ?"],
+        ["user", "Quand la journée est bien structurée, annoncée à l'avance, avec des repères visuels."],
+        ["bot", "Merci. Je prépare une simulation cohérente à partir de ces éléments."],
+      ]
+    }
+  },
+  {
+    id: 'social_isolement',
+    label: "Profil démo 3 · Social / isolement / communication",
+    intro: "Bonjour, je m'inquiète pour un élève du secondaire qui semble très en retrait du groupe malgré des compétences scolaires présentes.",
+    data: {
+      pseudo: 'Noah',
+      niveau: '1re-2e secondaire',
+      age: '12-13 ans',
+      diagnostic: 'Oui, un diagnostic est posé',
+      typesBesoin: ['TSA'],
+      demande: 'Mieux comprendre ce que vit cet élève',
+      obs: {
+        histoire: "Noah travaille plutôt bien sur le plan scolaire, mais reste très isolé et semble souvent en décalage avec le groupe.",
+        transitions: "Les transitions ne posent pas de problème majeur si elles sont explicites.",
+        moments_positifs: "Il s'engage fortement sur ses centres d'intérêt et peut parler avec précision quand le sujet le motive.",
+        forces: "Bon niveau de compréhension, mémoire solide, goût pour les sujets précis et capacité à travailler seul.",
+        appuisExistants: "Le travail en petit groupe choisi, les consignes explicites et les interactions préparées à l'avance l'aident.",
+        participation: "Participe peu spontanément, sauf sur ses sujets d'intérêt où il peut être très présent.",
+        consignes: "Les implicites sociaux ou les consignes trop floues le mettent en difficulté; l'explicite fonctionne mieux.",
+        autonomie: "Autonomie correcte dans le travail individuel.",
+        social: "Peu d'interactions spontanées, malentendus avec les pairs, préférence nette pour rester seul.",
+        bienetre: "Ne paraît pas en souffrance manifeste, mais son isolement et certains décalages interrogent l'équipe.",
+        langue: "Langage correct, mais compréhension parfois trop littérale de certaines formulations ou situations.",
+        complement: "Le décalage semble surtout social et pragmatique plutôt qu'académique."
+      },
+      transcript: [
+        ["user", "Bonjour, je m'inquiète pour un élève du secondaire qui semble très en retrait du groupe malgré des compétences scolaires présentes."],
+        ["bot", "Merci. Quel prénom fictif souhaitez-vous utiliser ?"],
+        ["user", "On va dire Noah."],
+        ["bot", "Très bien. Qu'est-ce que vous attendez surtout de cet échange ?"],
+        ["user", "Mieux comprendre ce qu'il vit au quotidien dans le groupe-classe."],
+        ["bot", "Pouvez-vous me dire dans quels moments le décalage se voit le plus ?"],
+        ["user", "Dans les travaux de groupe et dans les échanges informels; il reste souvent seul et comprend tout au pied de la lettre."],
+        ["bot", "Et quand est-ce que cela se passe mieux ?"],
+        ["user", "Quand on lui donne une consigne très explicite ou quand il parle d'un sujet qu'il connaît bien."],
+        ["bot", "Merci. Je m'appuie là-dessus pour générer une fiche démo réaliste."],
+      ]
+    }
+  }
+];
 
-  // Message d'ouverture de SOA — avant même que l'enseignant parle
+async async function runDemo(profileId = null) {
+  updateProgress(8);
+  const profile = profileId
+    ? DEMO_PROFILES.find(p => p.id === profileId) || DEMO_PROFILES[0]
+    : DEMO_PROFILES[Math.floor(Math.random() * DEMO_PROFILES.length)];
+
   addBotMessage(`Bonjour. Je suis SOA — Soutien à l'Observation et aux Aménagements.
 
-Je suis là pour vous aider à réfléchir à la situation d'un élève qui vous préoccupe. Ensemble, on va essayer de mieux comprendre ce qui se passe pour lui, et d'identifier des pistes concrètes que vous pourrez tester en classe.
+Je vous propose ici une fiche démo à partir d'un profil simulé. Chaque démonstration peut s'appuyer sur une situation différente afin d'illustrer plusieurs types de besoins observés à l'école.
 
-Quelques choses importantes avant de commencer :
-Je ne pose pas de diagnostic — je suis un outil de réflexion pédagogique, pas un professionnel de santé.
-Je ne remplace pas votre équipe, votre centre PMS ou un spécialiste.
-Je ne garde aucune donnée — tout ce que vous partagez reste dans votre navigateur, le temps de notre échange.
-Merci d'utiliser un prénom fictif pour l'élève dont vous allez me parler.
+Je ne pose pas de diagnostic. Je ne garde aucune donnée. Cette simulation sert uniquement à montrer le fonctionnement de l'outil.`, true);
+  await delay(450);
+  addBotMessage(`Simulation en cours : ${profile.label}`);
+  await delay(350);
 
-Quand vous êtes prêt·e, dites-moi ce qui vous amène.`, true);
-  await delay(600);
-
-  // Conversation démo — reflète le nouveau flux S-O-A en 4 temps
-  const exchanges = [
-    {
-      user: "Bonjour, j'enseigne en 3e primaire et j'ai un élève qui me préoccupe depuis la rentrée. Il décroche souvent, il reste en retrait dans les travaux de groupe, et il se met parfois en colère quand une activité change sans prévenir.",
-      bot: "Merci de me partager ça. Décrire une situation, c'est déjà un premier pas utile. Quel prénom fictif voulez-vous utiliser pour cet élève ?"
-    },
-    {
-      user: "Je vais l'appeler Léo.",
-      bot: "Bien. Qu'est-ce que vous aimeriez obtenir à l'issue de notre échange — mieux comprendre ce qui se passe pour lui, trouver des aménagements concrets, préparer une concertation ?"
-    },
-    {
-      user: "Surtout trouver des aménagements que je peux mettre en place maintenant, sans attendre.",
-      bot: "C'est clair. Léo a quel âge, et est-ce qu'un diagnostic ou une évaluation a déjà été fait pour lui ?"
-    },
-    {
-      user: "Il a 9 ans. Un TDAH a été posé il y a 6 mois, mais il n'y a pas encore d'accompagnement formalisé en classe.",
-      bot: "Je comprends — six mois sans cadre formalisé, ça laisse l'enseignant gérer seul. Dans quels moments de la journée les difficultés de Léo se voient-elles le plus ? Est-ce qu'il y a des déclencheurs que vous avez identifiés ?"
-    },
-    {
-      user: "Surtout lors des transitions entre activités — il met du temps à démarrer et s'énerve si le changement est trop abrupt. Et les longues tâches écrites l'après-midi, il s'effondre.",
-      bot: "C'est utile. Et à l'inverse — quand est-ce que ça se passe mieux pour lui ? Y a-t-il des contextes où il semble plus là, plus engagé ?"
-    },
-    {
-      user: "Il est vraiment motivé quand on fait des sciences ou des activités manuelles. Et quand je lui montre un exemple concret avant de démarrer, il comprend beaucoup mieux.",
-      bot: "C'est précieux — les sciences et les activités manuelles comme points d'ancrage, l'exemple concret comme déclic. Et justement, chez Léo, qu'est-ce qui fonctionne bien — ou mieux que le reste ? Qu'est-ce qui vous montre qu'il a des ressources ?"
-    },
-    {
-      user: "Il a une vraie curiosité intellectuelle. Quand quelque chose l'intéresse vraiment, il est capable d'une concentration remarquable. Et il est attachant, les adultes l'apprécient.",
-      bot: "C'est important d'avoir ça en tête — cette capacité de concentration intense sur ce qui l'intéresse, c'est une vraie ressource. Est-ce que quelque chose aide déjà, même un peu, dans votre classe ?"
-    },
-    {
-      user: "Oui — quand je lui donne une consigne courte avec un exemple, et que je vérifie qu'il a compris avant de le laisser démarrer, ça se passe beaucoup mieux. Et son enseignante de l'an passé utilisait des rituels et des repères visuels fixes.",
-      bot: "C'est exactement le type d'information utile. Ces ajustements fonctionnent déjà — on peut s'en inspirer. Est-ce qu'il participe spontanément en classe, ou plutôt il attend qu'on l'interpelle ?"
-    },
-    {
-      user: "Il ne lève jamais la main, mais quand je l'interpelle directement, il sait souvent répondre. Il est beaucoup dans la lune.",
-      bot: "Ça m'évoque quelque chose d'important : il suit davantage qu'il n'y paraît, mais s'auto-activer lui coûte beaucoup. Et côté relations avec les autres ?"
-    },
-    {
-      user: "Il a 2-3 copains avec qui ça se passe bien. Mais il évite les grands groupes. Il semble souvent fatigué, stressé, sauf dans ses moments de motivation.",
-      bot: "Ces liens existent — c'est un vrai appui. La langue d'enseignement, ce n'est pas un obstacle pour lui ?"
-    },
-    {
-      user: "Non, il est francophone natif.",
-      bot: "Bien. Avant que je prépare l'analyse — est-ce qu'il y a quelque chose d'important sur Léo que vous n'avez pas encore pu dire ?"
-    },
-    {
-      user: "Oui, une chose : son enseignante de l'an passé m'a dit qu'il était beaucoup plus apaisé dans sa classe. Elle utilisait beaucoup de rituels et de repères visuels fixes.",
-      bot: "C'est une information précieuse et concrète — si ça a fonctionné, c'est un vrai point de départ. Je prends ça en compte. Je prépare l'analyse."
-    },
-  ];
-
-  for (const ex of exchanges) {
-    addUserMessage(ex.user);
-    await delay(280);
-    addBotMessage(ex.bot);
-    await delay(220);
+  for (const [role, text] of profile.data.transcript) {
+    if (role === 'user') addUserMessage(text);
+    else addBotMessage(text);
+    await delay(role === 'user' ? 250 : 220);
   }
 
-  await delay(500);
-  addBotMessage("Je croise les observations, les signaux identifiés et le profil TDAH pour construire l'analyse…");
-  await delay(800);
+  await delay(400);
+  addBotMessage("Je croise les observations du cas simulé et je prépare la fiche…");
+  await delay(700);
 
-  // État injecté — riche en langage naturel pour activer SIGNAUX_OBSERVATION
-  state.data = {
-    pseudo: 'Léo',
-    niveau: '3e-4e primaire',
-    age: '9 ans',
-    diagnostic: 'Oui, un diagnostic est posé',
-    typesBesoin: ['TDAH'],
-    demande: 'Trouver des aménagements concrets',
-    obs: {
-      histoire: "décroche souvent, reste en retrait lors des travaux de groupe, se met en colère quand une tâche change sans prévenir",
-      moments_positifs: "motivé pour les sciences et les activités manuelles, plus apaisé avec des rituels et des repères visuels fixes, comprend mieux avec un exemple concret",
-      participation: "ne lève jamais la main spontanément, beaucoup dans la lune, sait répondre quand interpellé directement",
-      consignes: "consignes longues le perdent, comprend mieux quand on montre un exemple concret, support visuel aide",
-      autonomie: "besoin d'être relancé, ne démarre pas seul, a besoin qu'on soit là pour commencer",
-      social: "2-3 copains avec qui il s'entend bien, évite les grands groupes",
-      transitions: "supporte mal les changements, se dérègle lors des transitions, s'énerve si le changement est trop abrupt",
-      bienetre: "souvent fatigué l'après-midi, s'effondre sur les longues tâches, stressé et tendu, motivé pour les sciences et les activités manuelles",
-      langue: "francophone natif, pas de barrière linguistique",
-      forces: "curiosité intellectuelle réelle, concentration remarquable quand il est intéressé, attachant, les adultes l'apprécient, motivé pour les sciences et les activités manuelles",
-      appuisExistants: "consigne courte avec exemple et vérification de compréhension fonctionne bien, enseignante précédente utilisait des rituels et repères visuels fixes avec succès",
-      complement: "si on anticipe les transitions et qu'on structure les étapes, Léo peut vraiment s'engager"
-    },
-    scores: {}
-  };
-
+  state.data = JSON.parse(JSON.stringify(profile.data));
   const data = buildAnalysis();
   renderAnalysis(data);
 }
@@ -1878,6 +1996,7 @@ function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDemoChooser(); });
 </script>
 </body>
 </html>
