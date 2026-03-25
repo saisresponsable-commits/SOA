@@ -16,7 +16,7 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--navy); min-height:100vh; overflow-x:hidden; }
 
-  /* LANDING - STRICTEMENT IDENTIQUE À VOTRE V1 */
+  /* LANDING COMPLÈTE V1 */
   #landing { min-height:100vh; display:flex; flex-direction:column; position:relative; overflow:hidden; }
   .landing-bg { position:absolute; inset:0; background:linear-gradient(135deg,#F7F3EE 0%,#EDE8E0 40%,#E0D8CC 100%); z-index:0; }
   .landing-blob { position:absolute; border-radius:50%; filter:blur(80px); opacity:.35; z-index:1; }
@@ -56,7 +56,6 @@
   .landing-footer { position:relative; z-index:10; padding:20px 48px 32px; text-align:center; }
   .landing-footer-item { display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,.72); border:1px solid var(--border); border-radius:100px; padding:7px 16px; font-size:12px; font-weight:500; color:var(--slate); margin:4px; }
   .footer-dot { width:7px; height:7px; border-radius:50%; }
-  .dot-green{background:var(--sage)} .dot-amber{background:var(--amber)} .dot-navy{background:var(--navy)}
 
   /* APP VIEW */
   #app { display:none; height:100vh; flex-direction:column; background:var(--warm-white); }
@@ -73,12 +72,12 @@
   .msg-bubble { padding:14px 18px; border-radius:16px; font-size:14px; line-height:1.65; background:white; border:1px solid var(--border); box-shadow:var(--shadow); }
   .msg.user .msg-bubble { background:var(--navy); color:var(--cream); border:none; }
   .choices-wrap { display:flex; flex-wrap:wrap; gap:8px; margin-left:48px; }
-  .choice-btn { background:white; border:1.5px solid var(--border); border-radius:10px; padding:9px 16px; font-size:13px; cursor:pointer; transition:all .15s; }
+  .choice-btn { background:white; border:1.5px solid var(--border); border-radius:10px; padding:9px 16px; font-size:13px; cursor:pointer; }
   .choice-btn:hover { border-color:var(--sage); color:var(--sage-dark); }
   .input-area { padding:20px 32px; border-top:1px solid var(--border); background:var(--warm-white); }
   .input-wrapper { display:flex; gap:12px; background:white; border:1.5px solid var(--border); border-radius:14px; padding:12px 16px; box-shadow:var(--shadow); }
   #userInput { flex:1; border:none; outline:none; resize:none; font-family:inherit; font-size:14px; }
-  .send-btn { width:36px; height:36px; background:var(--navy); border:none; border-radius:9px; color:white; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .send-btn { width:36px; height:36px; background:var(--navy); border:none; border-radius:9px; color:white; cursor:pointer; }
   .send-btn:disabled { background:var(--border); cursor:not-allowed; }
   .fiche-wrapper { max-width:700px; margin-left:48px; }
   .fiche { background:white; border:1px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:var(--shadow-lg); }
@@ -86,6 +85,10 @@
   .fiche-body { padding:24px; }
   .fiche-section { margin-bottom:18px; padding-bottom:18px; border-bottom:1px solid var(--border); }
   .fiche-section-title { font-size:11px; font-weight:700; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+
+  @media(max-width:768px) {
+    .landing-hero{flex-direction:column;padding:24px;gap:40px} .hero-cards{width:100%}
+  }
 </style>
 </head>
 <body>
@@ -94,7 +97,6 @@
   <div class="landing-bg"></div>
   <div class="landing-blob blob-1"></div>
   <div class="landing-blob blob-2"></div>
-  <div class="landing-blob blob-3"></div>
   <nav class="landing-nav">
     <div class="logo-mark">S</div><span class="logo-text">SOA — Soutien à l'Observation et aux Aménagements</span>
   </nav>
@@ -102,25 +104,25 @@
     <div class="hero-content">
       <div class="hero-badge"><div class="hero-badge-dot"></div>Bonjour, je suis SOA 👋</div>
       <h1>Je suis là pour<br><em>vous écouter.</em></h1>
-      <p class="hero-desc">Décrivez-moi la situation d'un élève. Ensemble, explorons ses besoins observés et construisons une analyse pédagogique argumentée.</p>
+      <p class="hero-desc">Décrivez-moi la situation d'un élève. Ensemble, explorons ses besoins observés et construisons une analyse pédagogique structurée.</p>
       <div class="hero-btns">
         <button class="btn-primary" onclick="startApp()">Commencer une analyse</button>
-        <button class="btn-demo" onclick="startDemo()">Fiche démo (Multi-profils)</button>
+        <button class="btn-demo" onclick="startDemo()">Démo Multi-profils</button>
       </div>
     </div>
     <div class="hero-cards">
       <div class="info-card"><div class="card-icon green">🤝</div><div><div class="card-title">Zéro diagnostic médical</div><div class="card-desc">SOA est un outil de réflexion pédagogique uniquement.</div></div></div>
-      <div class="info-card"><div class="card-icon orange">🎓</div><div><div class="card-title">Pour les professionnels</div><div class="card-desc">Enseignants, CPMS, coordinateurs pédagogiques.</div></div></div>
+      <div class="info-card"><div class="card-icon orange">🎓</div><div><div class="card-title">Pour les professionnels</div><div class="card-desc">Enseignants, CPMS, coordinateurs.</div></div></div>
       <div class="info-card"><div class="card-icon blue">🔒</div><div><div class="card-title">Confidentialité totale</div><div class="card-desc">Pas de conservation de données personnelles.</div></div></div>
-      <div class="info-card"><div class="card-icon amber">📋</div><div><div class="card-title">Fiche de synthèse</div><div class="card-desc">Une synthèse structurée générée en fin d'échange.</div></div></div>
+      <div class="info-card"><div class="card-icon amber">📋</div><div><div class="card-title">Fiche de synthèse</div><div class="card-desc">Un document structuré généré en fin d'échange.</div></div></div>
     </div>
   </div>
   <div class="soa-method">
-    <div class="soa-step step-s"><div class="soa-step-letter">S</div><div class="soa-step-tag">Situation</div><div class="soa-step-title">Comprendre le contexte</div><div class="soa-step-desc">Analyse du niveau, de l'âge et de l'histoire scolaire.</div></div>
+    <div class="soa-step step-s"><div class="soa-step-letter">S</div><div class="soa-step-tag">Situation</div><div class="soa-step-title">Contexte</div><div class="soa-step-desc">Analyse du cadre scolaire et du niveau.</div></div>
     <div class="soa-connector">→</div>
-    <div class="soa-step step-o"><div class="soa-step-letter">O</div><div class="soa-step-tag">Observation</div><div class="soa-step-title">Analyser ensemble</div><div class="soa-step-desc">Exploration fine des dimensions pédagogiques et sociales.</div></div>
+    <div class="soa-step step-o"><div class="soa-step-letter">O</div><div class="soa-step-tag">Observation</div><div class="soa-step-title">Analyser ensemble</div><div class="soa-step-desc">Exploration fine des dimensions pédagogiques.</div></div>
     <div class="soa-connector">→</div>
-    <div class="soa-step step-a"><div class="soa-step-letter">A</div><div class="soa-step-tag">Ajustements</div><div class="soa-step-title">Passer à l'action</div><div class="soa-step-desc">Pistes concrètes et aménagements testables en classe.</div></div>
+    <div class="soa-step step-a"><div class="soa-step-letter">A</div><div class="soa-step-tag">Ajustements</div><div class="soa-step-title">Actions</div><div class="soa-step-desc">Pistes concrètes pour la classe.</div></div>
   </div>
   <div class="landing-footer">
     <div class="landing-footer-item"><span class="footer-dot dot-navy"></span>SOA — Outil Pédagogique</div>
@@ -135,7 +137,7 @@
       <span class="progress-label" id="progressLabel">Étape 1 / 8</span>
       <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     </div>
-    <div class="header-right"><button class="btn-demo" style="padding:6px 12px;font-size:12px;" onclick="location.reload()">Réinitialiser</button></div>
+    <div class="header-right"><button class="btn-demo" style="padding:6px 12px;font-size:12px;" onclick="location.reload()">Quitter</button></div>
   </header>
   <div class="chat-container" id="chatContainer"></div>
   <div class="input-area">
@@ -148,30 +150,21 @@
 
 <script>
 // ============================================================
-// MOTEUR V2 : AXES ET RÈGLES DE PONDÉRATION
+// MOTEUR DE FOND V2 MUSCLÉ
 // ============================================================
 const AXES = {
-  entreeTache:   { label: "Entrée dans la tâche", score: 0, indices: [], pistes: { primaire: ["Rituel de démarrage visuel", "Amorce individuelle"], secondaire: ["Checklist de départ", "Tâche amorcée ensemble"] } },
-  attention:     { label: "Maintien de l'attention", score: 0, indices: [], pistes: { primaire: ["Timer visuel", "Pauses régulées"], secondaire: ["Priorisation des tâches", "Support de planification"] } },
-  consignes:     { label: "Compréhension des consignes", score: 0, indices: [], pistes: { primaire: ["Consignes illustrées", "Reformulation"], secondaire: ["Explicitation lexicale", "Support écrit court"] } },
-  transitions:   { label: "Transitions / Flexibilité", score: 0, indices: [], pistes: { primaire: ["Annonce 5 min avant", "Routine de fin"], secondaire: ["Prévisibilité horaire", "Anticipation des changements"] } },
-  emotion:       { label: "Sécurité émotionnelle", score: 0, indices: [], pistes: { primaire: ["Espace de décompression", "Valorisation immédiate"], secondaire: ["Droit à l'erreur explicité", "Tuteur adulte de référence"] } },
-  social:        { label: "Relations / Groupe", score: 0, indices: [], pistes: { primaire: ["Binôme sécurisant", "Jeux tutorés"], secondaire: ["Rôle précis en groupe", "Médiation discrète"] } },
-  fatigue:       { label: "Disponibilité / Effort", score: 0, indices: [], pistes: { primaire: ["Allègement de la copie", "Alternance effort/repos"], secondaire: ["Évaluation sur l'essentiel", "Limitation du double coût copie/écoute"] } }
+  entreeTache:   { label: "Entrée dans la tâche", score: 0, indices: [], pistes: { primaire: ["Rituel de démarrage visuel", "Amorce individuelle"], secondaire: ["Checklist de départ"] } },
+  attention:     { label: "Maintien de l'attention", score: 0, indices: [], pistes: { primaire: ["Timer visuel", "Pauses régulées"], secondaire: ["Priorisation des tâches"] } },
+  consignes:     { label: "Compréhension des consignes", score: 0, indices: [], pistes: { primaire: ["Consignes illustrées"], secondaire: ["Support écrit court"] } },
+  social:        { label: "Relations / Groupe", score: 0, indices: [], pistes: { primaire: ["Binôme sécurisant"], secondaire: ["Rôle précis en groupe"] } }
 };
 
 const REGLES = [
-  { patterns: ["démarre pas", "bloque pour commencer", "attend l'aide", "ne lance pas"], axes: [{id:"entreeTache", poids:3}], lecture: "L'entrée dans la tâche semble nécessiter un étayage systématique." },
-  { patterns: ["dans la lune", "décroche", "distrait", "oublie en cours"], axes: [{id:"attention", poids:3}], lecture: "Le maintien attentionnel paraît fragile dans la durée." },
-  { patterns: ["comprend pas", "consigne longue", "perd le fil"], axes: [{id:"consignes", poids:3}], lecture: "Le traitement de l'information verbale sature rapidement." },
-  { patterns: ["énerve", "colère", "changement", "transition"], axes: [{id:"transitions", poids:3}, {id:"emotion", poids:1}], lecture: "Les changements de cadre semblent générer de l'insécurité." },
-  { patterns: ["seul", "isolé", "conflit", "pas d'ami"], axes: [{id:"social", poids:3}], lecture: "Le rapport aux pairs est décrit comme une zone de fragilité." },
-  { patterns: ["épuisé", "fatigue", "fin de journée", "lenteur"], axes: [{id:"fatigue", poids:3}], lecture: "Le coût d'effort scolaire pèse lourdement sur la disponibilité." }
+  { patterns: ["démarre pas", "bloque", "attend", "lance pas"], axes: [{id:"entreeTache", poids:3}], lecture: "Difficulté majeure d'entrée autonome en tâche." },
+  { patterns: ["seul", "isolé", "pas d.ami", "coin"], axes: [{id:"social", poids:3}], lecture: "Sentiment d'isolement social rapporté." },
+  { patterns: ["comprend pas", "consigne", "long"], axes: [{id:"consignes", poids:3}], lecture: "Surcharge cognitive sur les consignes verbales." }
 ];
 
-// ============================================================
-// STATE
-// ============================================================
 let state = {};
 function initState() {
   state = {
@@ -179,129 +172,104 @@ function initState() {
     data: { pseudo: 'l\'élève', niveau: '', age: '', diagnostic: '', typesBesoin: [],
            obs: { histoire: '', momentsDifficiles: '', momentsFavorables: '', forces: '', appuisExistants: '', bienetreEmotionnel: '', complement: '' } 
     },
-    relances: { social: false, autonomie: false, consignes: false, fatigue: false }
+    relances: { social: false, autonomie: false }
   };
 }
 
 // ============================================================
-// LOGIQUE DE FLUX
+// FLUX DE CONVERSATION
 // ============================================================
 function handleInput(el) { document.getElementById('sendBtn').disabled = el.value.trim().length === 0; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
 function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
 
 function processInput(text) {
   const t = text.toLowerCase();
-  // Analyse en temps réel pour la relance intelligente
   if (/seul|isolé|ami/i.test(t)) state.relances.social = true;
-  if (/démarre|bloque|lance/i.test(t)) state.relances.autonomie = true;
-  if (/consigne|comprend pas/i.test(t)) state.relances.consignes = true;
-  if (/fatigue|épuisé/i.test(t)) state.relances.fatigue = true;
+  if (/démarre|bloque/i.test(t)) state.relances.autonomie = true;
 
   switch(state.step) {
     case 'context': state.data.obs.histoire = text; state.step = 'pseudo'; updateProgress(1); 
         setTimeout(() => addBotMessage(`Pour préserver l'anonymat, quel prénom fictif donnerons-nous à l'élève ?`), 400); break;
     case 'pseudo': state.data.pseudo = text.trim(); state.step = 'demande'; 
-        setTimeout(() => { addBotMessage(`Quel est votre objectif prioritaire aujourd'hui ?`);
-        showChoices(['Comprendre l\'élève', 'Aménagements concrets', 'Préparer une concertation'], (c) => { 
-          state.data.demande = c; addUserMessage(c); state.step = 'niveau'; updateProgress(2);
-          setTimeout(() => { addBotMessage(`Dans quel niveau scolaire est ${state.data.pseudo} ?`);
-          showChoices(['Maternelle', 'Primaire', 'Secondaire'], (n) => { 
-            state.data.niveau = n; addUserMessage(n); state.step = 'age';
-            setTimeout(() => { addBotMessage(`Quel âge a-t-il environ ?`);
-            showChoices(['4-6 ans', '7-9 ans', '10-12 ans', '13-15 ans', '16+'], (a) => {
-              state.data.age = a; addUserMessage(a); state.step = 'diagnostic'; updateProgress(3);
-              setTimeout(() => { addBotMessage(`Y a-t-il un diagnostic posé ou suspecté ?`);
-              showChoices(['Oui', 'En cours', 'Suspecté', 'Aucun'], (d) => { state.data.diagnostic = d; addUserMessage(d); advanceTo('momentsDifficiles'); });
-            }, 400); }); }, 400); }); }, 400); }); }, 400); break;
+        setTimeout(() => { addBotMessage(`Quel est votre objectif pour aujourd'hui ?`);
+        showChoices(['Aménagements', 'Comprendre'], (c) => { state.data.demande = c; addUserMessage(c); state.step = 'niveau';
+        setTimeout(() => { addBotMessage(`Niveau scolaire ?`);
+        showChoices(['Primaire', 'Secondaire'], (n) => { state.data.niveau = n; addUserMessage(n); advanceTo('momentsDifficiles'); });
+        }, 400); }); }, 400); break;
     
     case 'momentsDifficiles': state.data.obs.momentsDifficiles = text; advanceTo('momentsFavorables'); break;
     case 'momentsFavorables': state.data.obs.momentsFavorables = text; advanceTo('forces'); break;
     case 'forces': state.data.obs.forces = text; advanceTo('appuisExistants'); break;
-    case 'appuisExistants': state.data.obs.appuisExistants = text; advanceTo('bienetreEmotionnel'); break;
-    case 'bienetreEmotionnel': state.data.obs.bienetreEmotionnel = text; advanceTo('complement'); break;
-    case 'complement': state.data.obs.complement = text; advanceTo('final'); break;
+    case 'appuisExistants': state.data.obs.appuisExistants = text; advanceTo('final'); break;
   }
 }
 
 function advanceTo(next) {
   state.step = next;
-  const stepsArr = ['momentsDifficiles', 'momentsFavorables', 'forces', 'appuisExistants', 'bienetreEmotionnel', 'complement', 'final'];
-  updateProgress(4 + stepsArr.indexOf(next));
-  if (next === 'final') { addBotMessage("Analyse finale en cours..."); setTimeout(() => renderAnalysis(buildAnalysis()), 1200); return; }
+  updateProgress(next === 'final' ? 8 : 4);
+  if (next === 'final') { addBotMessage("Analyse finale..."); setTimeout(() => renderAnalysis(buildAnalysis()), 1000); return; }
 
   const p = state.data.pseudo;
   const qMap = {
-    momentsDifficiles: `Dans quels moments les difficultés sont-elles les plus fortes ?`,
-    momentsFavorables: `À l'inverse, quand est-ce que ça se passe mieux pour ${p} ?`,
+    momentsDifficiles: `Quand les difficultés de ${p} sont-elles les plus fortes ?`,
+    momentsFavorables: `Et quand est-ce que ça se passe mieux ?`,
     forces: `Quelles sont ses ressources ou points forts ?`,
-    appuisExistants: `Qu'est-ce qui l'aide déjà (support, personne, cadre) ?`,
-    bienetreEmotionnel: state.relances.fatigue ? `Vous parliez de fatigue. Comment ${p} manifeste-t-il cette saturation ?` : `Comment décririez-vous son bien-être émotionnel ?`,
-    complement: `Un dernier point à ajouter ?`
+    appuisExistants: `Qu'est-ce qui l'aide déjà (personne, cadre) ?`
   };
   setTimeout(() => addBotMessage(qMap[next]), 400);
 }
 
-// ============================================================
-// MOTEUR D'ANALYSE (V2)
-// ============================================================
 function buildAnalysis() {
   const d = state.data; const obs = d.obs;
-  const texteComplet = Object.values(obs).join(' ').toLowerCase();
+  const txt = Object.values(obs).join(' ').toLowerCase();
+  const hyps = []; const pistes = [];
   
-  // 1. Calcul des scores par axes
-  REGLES.forEach(r => {
-    if (r.patterns.some(p => texteComplet.includes(p))) {
-      r.axes.forEach(a => { AXES[a.id].score += a.poids; AXES[a.id].indices.push(r.lecture); });
-    }
-  });
-
-  // 2. Construction des hypothèses pédagogiques (Strucutre 3 temps)
-  const hypotheses = [];
+  REGLES.forEach(r => { if (r.patterns.some(p => txt.includes(p))) { r.axes.forEach(a => { AXES[a.id].score += a.poids; AXES[a.id].indices.push(r.lecture); }); } });
   Object.entries(AXES).filter(([id, data]) => data.score >= 3).forEach(([id, data]) => {
-    hypotheses.push(`**Observation :** ${data.indices[0]} <br> **Hypothèse :** Cela suggère un besoin de ${data.label.toLowerCase()}. <br> **Effet :** Sans ajustement, ${d.pseudo} peut s'épuiser ou se décourager rapidement.`);
+    hyps.push(`**Observation :** ${data.indices[0]}<br>**Besoin :** Soutien sur l'axe ${data.label.toLowerCase()}.`);
+    pistes.push(...data.pistes[d.niveau === 'Secondaire' ? 'secondaire' : 'primaire']);
   });
-
-  // 3. Sélection des ajustements (contextuels selon niveau)
-  const niveauClé = d.niveau === 'Secondaire' ? 'secondaire' : 'primaire';
-  const pistes = [];
-  Object.entries(AXES).filter(([id, data]) => data.score >= 2).forEach(([id, data]) => {
-    pistes.push(...data.pistes[niveauClé]);
-  });
-
-  return { hypotheses: hypotheses.slice(0, 3), pistes: [...new Set(pistes)].slice(0, 5), leviers: obs.momentsFavorables, appuis: obs.appuisExistants };
+  return { hyps, pistes, levier: obs.momentsFavorables };
 }
 
 // ============================================================
-// UI & DEMO
+// UI HELPERS
 // ============================================================
-function startApp() { document.getElementById('landing').style.display = 'none'; document.getElementById('app').classList.add('active'); initState(); resetUI(); setTimeout(() => addBotMessage("Bonjour. Parlez-moi de la situation de l'élève."), 300); }
+function startApp() { document.getElementById('landing').style.display = 'none'; document.getElementById('app').classList.add('active'); initState(); resetUI(); setTimeout(() => addBotMessage("Bonjour. Parlez-moi de l'élève."), 300); }
 function resetUI() { document.getElementById('chatContainer').innerHTML = ''; updateProgress(0); }
 function sendMessage() { const i = document.getElementById('userInput'); const t = i.value.trim(); if (!t) return; addUserMessage(t); processInput(t); i.value = ''; document.getElementById('sendBtn').disabled = true; }
 function addBotMessage(t) { const c = document.getElementById('chatContainer'); const m = document.createElement('div'); m.className = 'msg bot'; m.innerHTML = `<div class="msg-avatar">S</div><div class="msg-bubble">${t}</div>`; c.appendChild(m); c.scrollTop = c.scrollHeight; }
 function addUserMessage(t) { const c = document.getElementById('chatContainer'); const m = document.createElement('div'); m.className = 'msg user'; m.innerHTML = `<div class="msg-avatar">👤</div><div class="msg-bubble">${t}</div>`; c.appendChild(m); c.scrollTop = c.scrollHeight; }
 function showChoices(opts, cb) { const c = document.getElementById('chatContainer'); const w = document.createElement('div'); w.className = 'choices-wrap'; opts.forEach(o => { const b = document.createElement('button'); b.className = 'choice-btn'; b.textContent = o; b.onclick = () => { w.remove(); cb(o); }; w.appendChild(b); }); c.appendChild(w); c.scrollTop = c.scrollHeight; }
-function updateProgress(s) { document.getElementById('progressFill').style.width = (s * 12.5) + '%'; document.getElementById('progressLabel').textContent = `Étape ${Math.min(s,8)} / 8`; }
+function updateProgress(s) { document.getElementById('progressFill').style.width = (s * 12.5) + '%'; }
 
 function renderAnalysis(data) {
   const c = document.getElementById('chatContainer');
   const fw = document.createElement('div'); fw.className = 'fiche-wrapper';
-  fw.innerHTML = `<div class="fiche"><div class="fiche-header"><h2>Analyse Pédagogique SOA</h2></div><div class="fiche-body">
-    <div class="fiche-section"><div class="fiche-section-title">Hypothèses de travail</div><ul>${data.hypotheses.map(h=>`<li>${h}</li>`).join('')}</ul></div>
-    <div class="fiche-section"><div class="fiche-section-title">Points d'appui / leviers</div><p>S'appuyer sur : <em>${data.leviers}</em></p></div>
-    <div class="fiche-section"><div class="fiche-section-title">Aménagements prioritaires</div><ul>${data.pistes.map(p=>`<li>${p}</li>`).join('')}</ul></div>
+  fw.innerHTML = `<div class="fiche"><div class="fiche-header"><h2>Synthèse SOA</h2></div><div class="fiche-body">
+    <div class="fiche-section"><strong>Hypothèses :</strong><ul>${data.hyps.map(h=>`<li>${h}</li>`).join('')}</ul></div>
+    <div class="fiche-section"><strong>Levier :</strong><p>${data.levier}</p></div>
+    <div class="fiche-section"><strong>Pistes :</strong><ul>${data.pistes.map(p=>`<li>${p}</li>`).join('')}</ul></div>
   </div></div>`;
   c.appendChild(fw); c.scrollTop = c.scrollHeight;
 }
 
+// ============================================================
+// SIMULATION (RÉPARÉE)
+// ============================================================
 async function startDemo() {
   startApp();
-  const profils = [
-    { nom: "Léo", initial: "Il ne démarre jamais ses exercices seul, il attend que je vienne le voir.", diff: "Le matin au démarrage, il reste devant sa feuille blanche.", fav: "Quand je fais un exemple au tableau et qu'il peut manipuler.", force: "Très curieux, adore les expériences.", appui: "La présence de l'adulte pour amorcer.", bien: "Vite découragé." },
-    { nom: "Emma", initial: "Emma s'énerve dès qu'il y a un changement d'horaire ou une transition rapide.", diff: "Passer d'une récréation calme au travail de groupe bruyant.", fav: "Quand le planning est écrit au tableau le matin.", force: "Méticuleuse, sens du détail.", appui: "Ses routines de rangement.", bien: "Anxieuse si imprévu." }
-  ];
-  const p = profils[Math.floor(Math.random() * profils.length)];
-  addBotMessage(`Simulation activée pour : **${p.nom}**`); await new Promise(r => setTimeout(r, 1000));
-  addUserMessage(p.initial); processInput(p.initial);
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+  const runStep = (text) => { addUserMessage(text); processInput(text); };
+
+  await delay(1000);
+  runStep("Léo est souvent seul, il ne démarre jamais ses exercices sans mon aide.");
+  await delay(1500);
+  runStep("Léo");
+  await delay(1500);
+  // Simule clic choix (Aménagements)
+  const choices = document.querySelectorAll('.choice-btn');
+  if(choices[0]) choices[0].click();
 }
 </script>
 </body>
