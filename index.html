@@ -67,9 +67,6 @@
   .footer-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
   .dot-green{background:var(--sage)} .dot-amber{background:var(--amber)} .dot-navy{background:var(--navy)}
 
-  /* VERSION BADGE */
-  .version-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(212,151,74,.12); border:1px solid rgba(212,151,74,.3); border-radius:8px; padding:4px 10px; font-size:11px; font-weight:600; color:#A07020; margin-left:8px; }
-
   /* APP */
   #app { display:none; height:100vh; flex-direction:column; background:var(--warm-white); }
   #app.active { display:flex; }
@@ -159,7 +156,6 @@
 </head>
 <body>
 
-<!-- LANDING -->
 <div id="landing">
   <div class="landing-bg"></div>
   <div class="landing-blob blob-1"></div>
@@ -208,7 +204,6 @@
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <header class="app-header">
     <div class="header-left">
@@ -243,1169 +238,95 @@
 
 <script>
 // ============================================================
+// TROUBLES & DIMENSIONS DB
+// ============================================================
+const TROUBLES_DB = {
+  tdah: { id: "tdah", label: "TDAH", aliases: ["tdah","attention","hyperactivité","impulsivité"], famille: "neurodéveloppement", amenagements: { consignes: ["Une consigne à la fois","Reformuler"], supports: ["Timer","Checklist"], organisation: ["Pauses","Tâches courtes"], environnement: ["Réduire distracteurs"] } },
+  tsa: { id: "tsa", label: "TSA", aliases: ["tsa","autisme"], famille: "neurodéveloppement", amenagements: { consignes: ["Explicite","Pas d'implicite"], supports: ["Planning visuel"], organisation: ["Routines"], environnement: ["Espace calme"] } },
+  dyslexie: { id: "dyslexie", label: "Dyslexie", aliases: ["dyslexie","lecture"], famille: "apprentissages", amenagements: { consignes: ["Audio","Police aérée"], supports: ["Synthèse vocale"], organisation: ["Tiers-temps"], environnement: ["Pas de lecture publique"] } },
+  anxiete: { id: "anxiete", label: "Anxiété", aliases: ["anxiété","stress","peur"], famille: "émotionnel", amenagements: { consignes: ["Rassurer","Clarté"], supports: ["Plan de travail"], organisation: ["Fractionner"], environnement: ["Sécurité"] } }
+};
+
+const GEN_PISTES = {
+  attention: { consignes: ["Consignes courtes","Un seul canal"], supports: ["Timer visuel"], organisation: ["Découper en étapes"], environnement: ["Isoloir ou casque"] },
+  fonctionsExecutives: { consignes: ["Checklist"], supports: ["Planner"], organisation: ["Micro-objectifs"], environnement: ["Routines fixes"] },
+  emotionnel: { consignes: ["Valorisation"], supports: ["Exemple réussi"], organisation: ["Sas de transition"], environnement: ["Adulte de référence"] }
+};
+
+const SIGNAUX_OBSERVATION = {
+  supportVisuelAide: { patterns: ["visuel","schéma","montre","image"], dimensions: ["langageOral","attention"], hypotheses: ["Le canal visuel semble compenser une fragilité de traitement verbal."] },
+  difficulteTransitions: { patterns: ["transition","changement","énerve","colère"], dimensions: ["autonomie","emotionnel"], hypotheses: ["Le besoin de prévisibilité est un levier majeur de sécurité."] },
+  decrochage: { patterns: ["lune","décroche","fil","perd"], dimensions: ["attention"], hypotheses: ["Le maintien attentionnel est coûteux dans la durée."] }
+};
+
+// ============================================================
 // STATE
 // ============================================================
 let state = {};
-let ficheContent = '';
 
 function initState() {
   state = {
     step: 'context',
     stepNum: 1,
     data: {
-      pseudo: 'l\'élève', niveau: '', age: '',
-      diagnostic: '', typesBesoin: [],
+      pseudo: 'l\'élève', niveau: '', age: '', diagnostic: '', typesBesoin: [],
       obs: { histoire: '', participation: '', forces: '', appuisExistants: '', consignes: '', autonomie: '', social: '', transitions: '', bienetre: '', langue: '', complement: '' },
-      scores: { inclusion: 0, social: 0, autonomie: 0, bienetre: 0, langue: 0 }
+      skipConsignes: false, skipAutonomie: false, skipSocial: false, skipBienetre: false
     }
   };
 }
 
 // ============================================================
-// NIVEAU 1 — BASE DES TROUBLES (TROUBLES_DB)
+// LOGIQUE CORE
 // ============================================================
-
-const TROUBLES_DB = {
-  tdah: {
-    id: "tdah", label: "TDAH",
-    aliases: ["tdah","trouble déficit de l'attention","trouble de l'attention","hyperactivité","impulsivité"],
-    famille: "neurodéveloppement",
-    descriptionSimple: "L'élève peut avoir du mal à se mettre au travail, à maintenir son attention, à s'organiser, à inhiber une réponse ou à gérer son énergie — sans manque de volonté.",
-    signesPossibles: ["démarre difficilement","oublie le matériel ou les consignes","se laisse distraire très vite","semble ne pas écouter jusqu'au bout","change d'activité sans terminer","répond trop vite","coupe la parole","bouge beaucoup","fatigue cognitive rapide","forte variabilité des performances"],
-    forcesPossibles: ["créativité","réactivité","spontanéité","bonne énergie relationnelle","engagement fort sur centres d'intérêt"],
-    vigilances: ["ne pas confondre difficulté d'autorégulation et opposition volontaire","ne pas réduire toute difficulté au TDAH","penser à la fatigabilité et aux comorbidités (dys, anxiété, TSA)"],
-    besoinsPedagogiques: ["prévisibilité","segmentation des tâches","étayage exécutif","rappels externes","feedback rapide","pauses régulées"],
-    questionsUtiles: ["Est-ce surtout le démarrage, le maintien ou la finition qui pose problème ?","L'élève réussit-il mieux avec une tâche courte et très structurée ?","Observe-t-on une différence nette entre ce qu'il sait et ce qu'il parvient à montrer ?"],
-    amenagements: {
-      consignes: ["Donner une consigne à la fois, oralement ET affichée","Faire reformuler brièvement avant de démarrer","Montrer un exemple concret avant le lancement","Utiliser des formulations courtes : 'Fais d'abord X, puis Y'"],
-      supports: ["Check-list visuelle des étapes","Timer visuel (time timer)","Code couleur stable","Repères fixes sur feuille ou bureau"],
-      organisation: ["Découper les tâches longues en sous-objectifs courts","Alterner effort intense et temps souples","Planifier les tâches exigeantes en début de séquence","Prévoir des micro-pauses de 2-3 minutes"],
-      amenagements: ["Annoncer les transitions 5 min à l'avance","Envisager un PAI avec l'équipe","Espace de décompression accessible","Temps supplémentaire pour les évaluations"],
-      environnement: ["Réduire les distracteurs proches du bureau","Placement facilitant le recentrage discret","Signal non-verbal convenu enseignant-élève","Favoriser le duo stable plutôt que le grand groupe"]
-    }
-  },
-  dyslexie: {
-    id: "dyslexie", label: "Dyslexie",
-    aliases: ["dyslexie","trouble spécifique de la lecture"],
-    famille: "apprentissages spécifiques",
-    descriptionSimple: "Lire demande un effort très important. L'élève peut lire lentement, hésiter, confondre certains mots ou perdre beaucoup d'énergie dans le décodage.",
-    signesPossibles: ["lecture lente","hésitations fréquentes","confusions de sons ou lettres","sauts de lignes","fatigue importante à la lecture","compréhension meilleure à l'oral","évitement des tâches de lecture"],
-    forcesPossibles: ["bonne compréhension orale","raisonnement pertinent","capacités à l'oral","bonne mémoire d'idées"],
-    vigilances: ["ne pas interpréter la lenteur comme un manque d'effort","ne pas surcharger en lecture silencieuse longue","distinguer lecture, compréhension et restitution"],
-    besoinsPedagogiques: ["allègement de la charge de lecture","accès au sens par plusieurs canaux","temps supplémentaire","supports lisibles"],
-    questionsUtiles: ["Comprend-il mieux quand on lui lit la consigne ?","Le problème est-il surtout de décoder, de comprendre, ou les deux ?"],
-    amenagements: {
-      consignes: ["Lire ou relire la consigne à voix haute","Surligner les informations clés","Réduire la densité textuelle","Utiliser une police lisible (Arial, taille 14, interligne 1.5)"],
-      supports: ["Synthèse vocale ou audio","Texte aéré avec mots-clés","Support pré-lu","Éviter les textes justifiés"],
-      organisation: ["Accorder plus de temps","Dissocier lecture et évaluation de la compétence visée","Proposer des enregistrements audio des textes importants"],
-      amenagements: ["PAI avec tiers-temps","Correcteur de lecture","Logopède spécialisé en lecture"],
-      environnement: ["Éviter la lecture à voix haute non préparée","Valoriser les productions orales","Dédramatiser les erreurs de lecture"]
-    }
-  },
-  dysorthographie: {
-    id: "dysorthographie", label: "Dysorthographie",
-    aliases: ["dysorthographie","trouble spécifique de l'orthographe"],
-    famille: "apprentissages spécifiques",
-    descriptionSimple: "L'élève peut savoir ce qu'il veut dire mais produire un écrit très coûteux, avec beaucoup d'erreurs, même après apprentissage.",
-    signesPossibles: ["erreurs nombreuses et persistantes","accords instables","orthographe variable d'un jour à l'autre","copie coûteuse","écrit pauvre par évitement"],
-    forcesPossibles: ["oral riche","idées pertinentes","compréhension préservée"],
-    vigilances: ["ne pas sanctionner la forme quand l'objectif porte sur le fond","distinguer contenu, syntaxe, orthographe"],
-    besoinsPedagogiques: ["tolérance à l'erreur selon l'objectif","outils de compensation","étayage de la production écrite"],
-    questionsUtiles: ["L'élève sait-il mieux expliquer à l'oral qu'à l'écrit ?","L'erreur orthographique empêche-t-elle de mesurer réellement ce qu'il sait ?"],
-    amenagements: {
-      consignes: ["Expliciter ce qui est évalué : idées, structure, orthographe ou tout à la fois"],
-      supports: ["Correcteur orthographique","Banques de mots","Dictée vocale","Modèles de phrases"],
-      organisation: ["Réduire la longueur si besoin","Autoriser une relecture guidée en étapes","Ne pas pénaliser l'orthographe hors cours de français"],
-      amenagements: ["PAI avec tiers-temps et correcteur","Logopède","Informer tous les enseignants"],
-      environnement: ["Dédramatiser les erreurs orthographiques devant les pairs","Valoriser le contenu sur la forme"]
-    }
-  },
-  dyscalculie: {
-    id: "dyscalculie", label: "Dyscalculie",
-    aliases: ["dyscalculie","trouble spécifique des mathématiques"],
-    famille: "apprentissages spécifiques",
-    descriptionSimple: "L'élève peut avoir du mal à comprendre le sens des nombres, à retenir les faits arithmétiques, à poser une procédure ou à suivre plusieurs étapes.",
-    signesPossibles: ["confusion des quantités","difficulté à mémoriser les tables","erreurs de procédure","perte dans les étapes","forte anxiété en mathématiques"],
-    forcesPossibles: ["raisonnement verbal","compréhension si manipulation concrète","persévérance quand l'échec est sécurisé"],
-    vigilances: ["ne pas confondre avec simple retard d'apprentissage","distinguer compréhension, mémoire et anxiété"],
-    besoinsPedagogiques: ["concret","visuel","étapes explicites","stabilité des procédures"],
-    questionsUtiles: ["L'élève comprend-il le sens de ce qu'il calcule ?","Les difficultés apparaissent-elles surtout avec l'abstraction ?"],
-    amenagements: {
-      consignes: ["Donner une procédure explicite en étapes","Faire verbaliser la stratégie","Décomposer en sous-étapes numérotées"],
-      supports: ["Droite numérique","Tables de référence","Schémas et manipulations","Calculatrice pour libérer la mémoire de travail"],
-      organisation: ["Réduire la quantité d'exercices répétitifs","Laisser plus de temps pour les problèmes","Ne pas pénaliser le calcul quand la démarche est correcte"],
-      amenagements: ["PAI avec tiers-temps et calculatrice","Bilan neuropsychologique ou logopédique spécialisé"],
-      environnement: ["Éviter le calcul mental oral sous pression publique","Valoriser les raisonnements et démarches"]
-    }
-  },
-  dyspraxie_tdc: {
-    id: "dyspraxie_tdc", label: "Dyspraxie / TDC",
-    aliases: ["dyspraxie","tdc","trouble développemental de la coordination","trouble de la coordination"],
-    famille: "neurodéveloppement",
-    descriptionSimple: "L'élève peut savoir ce qu'il veut faire mais avoir beaucoup de mal à organiser le geste, écrire, copier, découper ou se repérer dans l'espace.",
-    signesPossibles: ["écriture lente ou illisible","grande fatigue motrice","copie très coûteuse","difficulté avec règle ou ciseaux","désorganisation spatiale","maladresse apparente"],
-    forcesPossibles: ["raisonnement oral","bonne compréhension","capacités préservées dès que le geste n'est plus central"],
-    vigilances: ["ne pas attribuer à un manque de soin","ne pas multiplier les tâches de copie inutiles","penser à la double tâche geste + réflexion"],
-    besoinsPedagogiques: ["réduction du coût moteur","compensation","supports déjà préparés","temps majoré"],
-    questionsUtiles: ["L'élève sait-il répondre oralement à ce qu'il ne parvient pas à écrire ?","Le problème est-il surtout dans le geste, la planification, ou les deux ?"],
-    amenagements: {
-      consignes: ["Éviter les doubles consignes complexes en situation graphique","Décomposer geste par geste les activités motrices"],
-      supports: ["Ordinateur ou tablette","Photocopies du cours","Gabarits et feuilles pré-structurées","Plan incliné, gros stylo"],
-      organisation: ["Réduire la copie","Temps supplémentaire","Évaluer le fond séparément de la qualité graphique"],
-      amenagements: ["PAI avec accès au clavier","Bilan ergothérapeutique","Coordonner avec l'ergo si suivi en place"],
-      environnement: ["Matériel stable et accessible","Espace suffisant","Valoriser les compétences verbales et conceptuelles"]
-    }
-  },
-  dysgraphie: {
-    id: "dysgraphie", label: "Dysgraphie",
-    aliases: ["dysgraphie","trouble de l'écriture"],
-    famille: "apprentissages / production écrite",
-    descriptionSimple: "Écrire à la main demande un effort disproportionné, ce qui ralentit, fatigue et gêne l'accès au contenu.",
-    signesPossibles: ["écriture lente","douleurs à la main","illisibilité","grande fatigue en prise de notes","refus d'écrire"],
-    forcesPossibles: ["oral riche","bonne compréhension","idées préservées"],
-    vigilances: ["ne pas confondre avec manque d'application","distinguer difficulté graphomotrice et orthographique"],
-    besoinsPedagogiques: ["alléger l'écriture manuscrite","supports alternatifs","anticipation"],
-    questionsUtiles: ["Combien d'énergie l'élève dépense-t-il juste pour écrire ?"],
-    amenagements: {
-      consignes: ["Réduire la quantité à noter","Fournir les notes à l'avance"],
-      supports: ["Clavier","Textes à trous","Photocopies","Dictée vocale"],
-      organisation: ["Réduire la quantité à copier","Temps majoré","Séparer évaluation du geste et évaluation du contenu"],
-      amenagements: ["PAI avec clavier","Bilan ergothérapeutique"],
-      environnement: ["Dédramatiser la qualité graphique","Valoriser le contenu"]
-    }
-  },
-  tdl_dysphasie: {
-    id: "tdl_dysphasie", label: "TDL / Dysphasie",
-    aliases: ["dysphasie","tdl","trouble du langage oral","trouble développemental du langage"],
-    famille: "neurodéveloppement",
-    descriptionSimple: "L'élève peut peiner à comprendre les phrases longues, à trouver ses mots, à formuler clairement, à retenir un message oral ou à suivre un échange rapide.",
-    signesPossibles: ["compréhension partielle des consignes orales","expression orale pauvre ou laborieuse","manque du mot","phrases peu structurées","fatigue dans les échanges"],
-    forcesPossibles: ["compréhension meilleure avec contexte visuel","engagement quand la tâche est démontrée"],
-    vigilances: ["ne pas confondre avec manque d'attention","tenir compte du plurilinguisme sans tout lui attribuer"],
-    besoinsPedagogiques: ["langage explicite","débit ralenti","supports visuels","reformulation"],
-    questionsUtiles: ["L'élève comprend-il mieux quand on montre en même temps qu'on explique ?"],
-    amenagements: {
-      consignes: ["Phrases courtes, une information à la fois","Reformulation systématique","Vérification de compréhension","Éviter les métaphores et formulations implicites"],
-      supports: ["Pictos","Schémas","Mots-clés visuels","Lexique illustré"],
-      organisation: ["Temps de traitement supplémentaire","Oral avant écrit pour vérifier les compétences réelles"],
-      amenagements: ["Suivi logopédique spécialisé en langage oral","Contacter le PMS"],
-      environnement: ["Ne jamais imposer une prise de parole publique improvisée","Valoriser les réussites non verbales"]
-    }
-  },
-  tsa: {
-    id: "tsa", label: "TSA",
-    aliases: ["tsa","autisme","trouble du spectre de l'autisme"],
-    famille: "neurodéveloppement",
-    descriptionSimple: "L'élève peut être déstabilisé par l'implicite, les changements, le bruit, l'imprévu ou certaines interactions sociales. Il peut avoir besoin de routines fortes et de repères stables.",
-    signesPossibles: ["difficulté avec l'implicite","besoin de routines","stress lors des changements","hypersensibilités sensorielles","intérêts spécifiques marqués","fatigue sociale"],
-    forcesPossibles: ["goût de la précision","mémoire de détails","fidélité aux routines","expertise sur centres d'intérêt"],
-    vigilances: ["ne pas réduire le TSA à un problème social","penser à la surcharge sensorielle et à la fatigue de masquage"],
-    besoinsPedagogiques: ["prévisibilité","explicitation","sécurisation sensorielle","temps d'adaptation"],
-    questionsUtiles: ["Qu'est-ce qui change juste avant que la situation se dégrade ?","L'élève est-il surtout en difficulté avec l'imprévu, le social, le sensoriel, ou le cumul ?"],
-    amenagements: {
-      consignes: ["Consignes explicites sans implicite ni métaphore","Annoncer les changements à l'avance","Toujours illustrer d'un exemple"],
-      supports: ["Planning visuel détaillé","Repères fixes et stables","Scénarios sociaux si besoin"],
-      organisation: ["Rituels stables de début et fin de cours","Anticipation systématique des transitions","Agenda visuel de la journée dès l'arrivée"],
-      amenagements: ["PAI ou PIA avec l'équipe PMS","Espace sensoriel calme accessible","Informer l'élève des intervenants extérieurs"],
-      environnement: ["Réduire les stimulations excessives (bruit, lumière)","Place fixe et stable","Éviter l'exposition publique non préparée"]
-    }
-  },
-  anxiete: {
-    id: "anxiete", label: "Anxiété",
-    aliases: ["anxiété","anxieux","angoisse","stress intense","peur scolaire"],
-    famille: "émotionnel / santé mentale",
-    descriptionSimple: "L'élève peut craindre l'erreur, le regard des autres, l'évaluation, l'imprévu ou certaines situations sociales — provoquant évitement, blocage ou somatisation.",
-    signesPossibles: ["peur de se tromper","besoin excessif de réassurance","blocage face à l'évaluation","pleurs, maux de ventre, évitement","perfectionnisme","mutisme ponctuel"],
-    forcesPossibles: ["souci de bien faire","conscience des attentes","sensibilité aux autres"],
-    vigilances: ["ne pas interpréter le retrait comme un manque de motivation","ne pas renforcer involontairement l'évitement"],
-    besoinsPedagogiques: ["sécurité","prévisibilité","progressivité","droit à l'erreur"],
-    questionsUtiles: ["L'élève sait-il faire quand la pression baisse ?","Observe-t-on surtout un blocage, un évitement ou une agitation anxieuse ?"],
-    amenagements: {
-      consignes: ["Clarifier l'attendu et le niveau d'exigence","Reformuler en termes positifs : 'Tu peux faire…'","Éviter les évaluations surprises"],
-      supports: ["Repères visuels stables","Étapes visibles","Plan de travail clair","Exemples de productions réussies"],
-      organisation: ["Préparer les évaluations à l'avance","Fractionner les tâches complexes","Offrir des sas de reprise","Éviter la compétition et les comparaisons"],
-      amenagements: ["Échange avec les parents et le PMS","Signal discret convenu enseignant-élève","Modalités d'évaluation adaptées (oral au lieu d'écrit)"],
-      environnement: ["Climat de classe sécurisant","Éviter les interpellations publiques inattendues","Valoriser les réussites même modestes","Relation individuelle courte et régulière (2 min/jour)"]
-    }
-  },
-  fonctions_executives: {
-    id: "fonctions_executives", label: "Fragilités exécutives",
-    aliases: ["fonctions exécutives","désorganisation","planification","inhibition","mémoire de travail","dysexécutif"],
-    famille: "fonctionnel transdiagnostique",
-    descriptionSimple: "Même sans étiquette précise, certains élèves peinent à s'organiser, planifier, garder plusieurs informations en tête, changer de stratégie ou s'auto-réguler.",
-    signesPossibles: ["oublis fréquents","désorganisation du cartable ou du travail","perte du fil","difficulté à planifier","persévération","lenteur d'installation"],
-    forcesPossibles: ["compréhension préservée quand l'environnement structure"],
-    vigilances: ["très fréquent dans TDAH, TSA, dys, anxiété — peut aussi exister sans diagnostic posé"],
-    besoinsPedagogiques: ["étayage externe","routines","modélisation"],
-    questionsUtiles: ["De quoi l'élève a-t-il besoin pour démarrer seul ?"],
-    amenagements: {
-      consignes: ["Décomposer chaque activité en étapes précises numérotées","Fournir une checklist que l'élève coche"],
-      supports: ["Check-lists","Modèles","Planner visuel","Organisateurs graphiques","Minuteur visible"],
-      organisation: ["Micro-objectifs","Séquençage explicite","Vérifications intermédiaires","Pas de tâches ouvertes sans cadre"],
-      amenagements: ["PAI avec aménagements liés à la planification","Bilan neuropsychologique si besoin"],
-      environnement: ["Environnement très prévisible avec routines stables","Placement proche de l'enseignant","Réduire les distracteurs"]
-    }
-  },
-  mutisme_selectif: {
-    id: "mutisme_selectif", label: "Mutisme sélectif",
-    aliases: ["mutisme sélectif","ne parle pas à l'école","parle à la maison mais pas en classe"],
-    famille: "anxiété / communication",
-    descriptionSimple: "L'élève ne choisit pas simplement de se taire : parler dans certains contextes peut être vécu comme impossible.",
-    signesPossibles: ["parle dans certains lieux mais pas à l'école","communication non verbale préservée","blocage en réponse orale"],
-    forcesPossibles: ["compréhension souvent préservée","communication non verbale parfois riche"],
-    vigilances: ["ne pas forcer la prise de parole publique","ne pas confondre avec timidité simple"],
-    besoinsPedagogiques: ["sécurité relationnelle","progressivité","alternatives à l'oral"],
-    questionsUtiles: ["Dans quels contextes la communication est-elle possible, même sans parole ?"],
-    amenagements: {
-      consignes: ["Accepter les réponses non verbales (pointage, écrit, hochement)"],
-      supports: ["Réponse écrite, pointage, choix visuels"],
-      organisation: ["Progression très graduée vers la parole","Évaluer les compétences par écrit ou pointage"],
-      amenagements: ["Accompagnement psychologique spécialisé","Coordination avec les parents"],
-      environnement: ["Ne jamais forcer la parole en public","Créer des espaces de communication sécurisés à 2"]
-    }
-  },
-  barriere_linguistique: {
-    id: "barriere_linguistique", label: "Barrière linguistique",
-    aliases: ["barrière linguistique","primo-arrivant","allophone","langue maternelle différente","ne parle pas français à la maison"],
-    famille: "contextuel",
-    descriptionSimple: "Les difficultés observées peuvent être liées à la maîtrise en cours de la langue d'enseignement — à distinguer soigneusement d'un trouble des apprentissages.",
-    signesPossibles: ["consignes partiellement comprises","meilleures performances dans les tâches non verbales","expression orale hésitante","vocabulaire scolaire limité"],
-    forcesPossibles: ["plurilinguisme","ressources dans la langue maternelle","adaptabilité"],
-    vigilances: ["ne pas confondre barrière linguistique et trouble des apprentissages","valoriser le plurilinguisme comme ressource"],
-    besoinsPedagogiques: ["lexique explicite","supports visuels","temps de traitement","médiation culturelle si besoin"],
-    questionsUtiles: ["Les difficultés apparaissent-elles surtout dans les tâches verbales ?","L'élève comprend-il mieux avec un support visuel ou une démonstration ?"],
-    amenagements: {
-      consignes: ["Accompagner d'un support visuel ou illustré","Utiliser des gestes et démonstrations","Vocabulaire simplifié, phrases courtes"],
-      supports: ["Lexiques bilingues ou illustrés","Supports visuels riches","Traducteur ou médiateur si nécessaire"],
-      organisation: ["Plus de temps pour les tâches verbales","Prioriser l'oral et le visuel avant l'écrit","Distinguer maîtrise de la langue et compétences disciplinaires"],
-      amenagements: ["Dispositifs d'aide aux primo-arrivants","PMS pour évaluation du niveau linguistique","Médiateur interculturel si communication difficile avec la famille"],
-      environnement: ["Valoriser le plurilinguisme devant la classe","Éviter la mise en situation d'exposition publique","Pairs bienveillants comme appuis"]
-    }
-  }
-};
-
-// ============================================================
-// NIVEAU 2 — DIMENSIONS D'OBSERVATION (DIMENSIONS_OBSERVATION)
-// ============================================================
-
-const DIMENSIONS_OBSERVATION = {
-  attention:           { label: "Attention",           items: ["soutien attentionnel","distractibilité","double tâche"] },
-  fonctionsExecutives: { label: "Fonctions exécutives", items: ["planification","inhibition","mémoire de travail","flexibilité"] },
-  langageOral:         { label: "Langage oral",         items: ["compréhension","expression","accès au mot","pragmatique"] },
-  langageEcrit:        { label: "Langage écrit",        items: ["lecture","orthographe","production écrite","copie"] },
-  mathematiques:       { label: "Mathématiques",        items: ["sens du nombre","procédures","résolution de problèmes"] },
-  motricite:           { label: "Motricité",            items: ["graphomotricité","coordination","praxies","fatigabilité motrice"] },
-  social:              { label: "Social",               items: ["lecture des codes sociaux","relation aux pairs","demande d'aide"] },
-  emotionnel:          { label: "Émotionnel",           items: ["anxiété","tolérance à l'erreur","régulation émotionnelle"] },
-  sensoriel:           { label: "Sensoriel",            items: ["bruit","lumière","contact","mouvements","surcharge"] },
-  autonomie:           { label: "Autonomie",            items: ["installation","matériel","initiation","achèvement","transitions"] }
-};
-
-// Correspondance trouble → dimensions impactées
-const TROUBLE_TO_DIMENSIONS = {
-  tdah:                      ["attention","fonctionsExecutives","autonomie","emotionnel"],
-  dyslexie:                  ["langageEcrit","attention"],
-  dysorthographie:           ["langageEcrit"],
-  dyscalculie:               ["mathematiques","fonctionsExecutives"],
-  dyspraxie_tdc:             ["motricite","autonomie","fonctionsExecutives"],
-  dysgraphie:                ["motricite","langageEcrit"],
-  tdl_dysphasie:             ["langageOral","langageEcrit","social"],
-  tsa:                       ["social","sensoriel","emotionnel","fonctionsExecutives","autonomie"],
-  anxiete:                   ["emotionnel","autonomie","social"],
-  fonctions_executives:      ["fonctionsExecutives","autonomie"],
-  mutisme_selectif:          ["emotionnel","social","langageOral"],
-  barriere_linguistique:     ["langageOral","langageEcrit","social"]
-};
-
-// ============================================================
-// FICHIER 3 — signaux-db.js
-// Phrases-types → dimensions + hypothèses pédagogiques
-// ============================================================
-
-const SIGNAUX_OBSERVATION = {
-
-  // --- SUPPORTS ET CANAUX ---
-  supportVisuelAide: {
-    patterns: [
-      "comprend mieux quand on montre","réussit avec un modèle","a besoin de voir",
-      "l'exemple aide","visuel","schéma","démonstration","comprend si je montre",
-      "mieux avec une image","support visuel","illustrer"
-    ],
-    dimensions: ["langageOral","fonctionsExecutives","attention"],
-    hypotheses: [
-      "Le canal visuel semble plus accessible que le canal verbal seul",
-      "La charge verbale à l'oral pourrait être trop élevée sans appui concret",
-      "L'exemple ou le modèle pourrait servir de point d'ancrage pour démarrer"
-    ]
-  },
-
-  consigneLongueProbleme: {
-    patterns: [
-      "consigne longue le perd","plusieurs instructions","trop d'étapes","perd le fil",
-      "oublie la consigne","ne retient pas tout","consignes multiples",
-      "perd en route","trop d'informations en même temps"
-    ],
-    dimensions: ["attention","fonctionsExecutives"],
-    hypotheses: [
-      "La mémoire de travail semble limitée — garder plusieurs informations simultanément coûte beaucoup",
-      "Les consignes fractionnées en une seule étape à la fois pourraient changer la donne"
-    ]
-  },
-
-  oralMieuxQuEcrit: {
-    patterns: [
-      "comprend mieux à l'oral","meilleur à l'oral","s'exprime mieux oralement",
-      "réponse orale bien meilleure","écrit difficile mais oral ok",
-      "quand on lui dit il comprend","à l'oral il sait"
-    ],
-    dimensions: ["langageEcrit","attention"],
-    hypotheses: [
-      "L'écrit représente probablement une surcharge supplémentaire qui masque les compétences réelles",
-      "Évaluer à l'oral ou proposer des réponses orales pourrait révéler ce que l'élève sait vraiment"
-    ]
-  },
-
-  // --- AUTONOMIE ET DÉMARRAGE ---
-  difficulteDemarrage: {
-    patterns: [
-      "ne démarre pas seul","attend","relancé","besoin d'être lancé","ne commence pas",
-      "reste sans rien faire","démarre très lentement","bloqué au démarrage",
-      "a besoin qu'on soit là pour commencer"
-    ],
-    dimensions: ["fonctionsExecutives","autonomie","attention"],
-    hypotheses: [
-      "L'initiation de tâche semble coûteuse — ce n'est pas forcément un manque de motivation",
-      "Un étayage de démarrage (exemple, première étape faite ensemble) pourrait suffire à débloquer"
-    ]
-  },
-
-  difficulteTransitions: {
-    patterns: [
-      "supporte mal les changements","se dérègle lors des transitions","du mal à passer d'une activité à l'autre",
-      "énerve quand ça change","colère lors des changements","imprévu le déstabilise",
-      "transitions difficiles","résiste aux changements","s'accroche à l'activité en cours",
-      "changemet abrupt","changement non annoncé"
-    ],
-    dimensions: ["autonomie","emotionnel","fonctionsExecutives"],
-    hypotheses: [
-      "Le besoin de prévisibilité semble central — les changements non anticipés sont coûteux",
-      "Annoncer les transitions à l'avance pourrait réduire significativement les réactions",
-      "La fragilité de flexibilité cognitive pourrait rendre chaque changement épuisant"
-    ]
-  },
-
-  // --- ATTENTION ET CONCENTRATION ---
-  decrochageAttentionnel: {
-    patterns: [
-      "dans la lune","décroche","distrait","ne suit pas","tête ailleurs",
-      "perd le fil","n'écoute pas","absent","regard dans le vide",
-      "ailleurs","inattentif"
-    ],
-    dimensions: ["attention","fonctionsExecutives"],
-    hypotheses: [
-      "Le maintien de l'attention dans la durée semble fragile — ce n'est pas un choix",
-      "Des rappels réguliers et discrets pourraient suffire à recentrer sans tension"
-    ]
-  },
-
-  fatigueCognitive: {
-    patterns: [
-      "fatigué l'après-midi","épuisé en fin de journée","fatigue rapide","s'effondre sur les longues tâches",
-      "tenait le matin mais plus l'après-midi","perd pied vers la fin",
-      "fatigabilité","se fatigue vite","moins performant en fin de séquence"
-    ],
-    dimensions: ["attention","emotionnel","autonomie"],
-    hypotheses: [
-      "La charge cognitive semble élevée — l'élève dépense peut-être beaucoup d'énergie juste pour tenir",
-      "Planifier les tâches exigeantes le matin pourrait faire une vraie différence",
-      "La fatigabilité peut amplifier toutes les autres difficultés observées"
-    ]
-  },
-
-  // --- SOCIAL ET ÉMOTIONNEL ---
-  isolementSocial: {
-    patterns: [
-      "seul","pas d'ami","évite les autres","isolé","ne joue pas avec les autres",
-      "en retrait","pas intégré","reste dans son coin","difficultés relationnelles"
-    ],
-    dimensions: ["social","emotionnel"],
-    hypotheses: [
-      "L'isolement peut être subi ou choisi — les deux méritent une attention différente",
-      "Des liens même ténus avec 1 ou 2 pairs peuvent constituer un vrai appui"
-    ]
-  },
-
-  anxieteScolaire: {
-    patterns: [
-      "stressé","anxieux","peur de se tromper","pleure","maux de ventre","évite les évaluations",
-      "ne veut pas essayer","se bloque","panique","réassurance fréquente",
-      "perfectionniste","très dur avec lui-même","catastrophise"
-    ],
-    dimensions: ["emotionnel","autonomie","social"],
-    hypotheses: [
-      "L'anxiété pourrait masquer des compétences réelles en situation de pression",
-      "Dédramatiser l'erreur et clarifier les attentes pourrait libérer de l'espace pour apprendre",
-      "Le blocage observé pourrait être une réponse d'évitement face à une peur de l'échec"
-    ]
-  },
-
-  frustrationComportement: {
-    patterns: [
-      "se met en colère","frustration","explose","déborde","crise","agité",
-      "comportement perturbateur","réaction disproportionnée","difficile à gérer en classe"
-    ],
-    dimensions: ["emotionnel","autonomie","sensoriel"],
-    hypotheses: [
-      "La frustration visible peut signaler une surcharge — cognitive, sensorielle ou émotionnelle",
-      "Identifier ce qui précède systématiquement ces moments pourrait révéler le déclencheur réel"
-    ]
-  },
-
-  // --- LANGAGE ET COMMUNICATION ---
-  difficulteExpression: {
-    patterns: [
-      "du mal à s'exprimer","peine à trouver ses mots","s'exprime peu","langage pauvre",
-      "ne prend pas la parole","difficultés à formuler","phrases courtes ou incomplètes"
-    ],
-    dimensions: ["langageOral","social"],
-    hypotheses: [
-      "Les difficultés d'expression orale peuvent freiner la participation et masquer la compréhension",
-      "Des modalités de réponse alternatives (écrit, pointage, dessin) pourraient révéler ce que l'élève sait"
-    ]
-  },
-
-  difficulteComprehensionOrale: {
-    patterns: [
-      "ne comprend pas les consignes","comprend mal","perd en cours d'explication",
-      "a besoin qu'on répète","ne suit pas les instructions","regardes ses voisins pour imiter"
-    ],
-    dimensions: ["langageOral","attention","fonctionsExecutives"],
-    hypotheses: [
-      "La compréhension orale pourrait être fragile — les consignes courtes et visuelles pourraient aider",
-      "Observer si l'élève imite ses voisins peut indiquer une stratégie de compensation"
-    ]
-  },
-
-  // --- MOTRICITÉ ET ÉCRITURE ---
-  difficultesEcrites: {
-    patterns: [
-      "écriture difficile","écrit lentement","copie coûteuse","écriture illisible","peine à écrire",
-      "main fatiguée","n'aime pas écrire","refuse d'écrire","peu d'écrit"
-    ],
-    dimensions: ["motricite","langageEcrit"],
-    hypotheses: [
-      "Le coût moteur de l'écriture pourrait être disproportionné et masquer les compétences réelles",
-      "Un accès au clavier ou des supports pré-remplis pourraient libérer de l'énergie pour le contenu"
-    ]
-  },
-
-  // --- APPUIS ET RESSOURCES ---
-  momentsFavorables: {
-    patterns: [
-      "mieux en activité manuelle","s'engage dans les sciences","motivé pour le dessin",
-      "aime les jeux","s'investit dans les projets","enthousiaste quand","réussit quand",
-      "performant en","point fort","fort en"
-    ],
-    dimensions: ["emotionnel","autonomie"],
-    hypotheses: [
-      "Ces contextes favorables révèlent des ressources réelles — ils peuvent servir de levier pédagogique",
-      "Identifier ce qui différencie les moments de réussite pourrait orienter les aménagements"
-    ]
-  },
-
-  pairsPositifs: {
-    patterns: [
-      "a des amis","quelques copains","s'entend bien avec","lien avec","intégré dans","joue avec"
-    ],
-    dimensions: ["social"],
-    hypotheses: [
-      "Les liens existants sont un appui solide — la pair-aidance pourrait être valorisée",
-      "S'appuyer sur ces relations pour les travaux en duo pourrait faciliter l'engagement"
-    ]
-  },
-
-  // --- SENSORIEL ---
-  sensibiliteSensorielle: {
-    patterns: [
-      "bruit","ne supporte pas le bruit","sensible au bruit","surcharge","agité quand c'est bruyant",
-      "lumière","contact physique","stimulation","environnement chargé"
-    ],
-    dimensions: ["sensoriel","emotionnel","autonomie"],
-    hypotheses: [
-      "Une sensibilité sensorielle pourrait amplifier la charge globale et réduire les ressources disponibles pour apprendre",
-      "Réduire les stimulations ou proposer un espace calme accessible pourrait être une piste simple"
-    ]
-  }
-};
-
-// Moteur de détection des signaux dans les observations libres
-function detectSignaux(obs) {
-  const texte = [
-    obs.histoire || '', obs.participation || '', obs.consignes || '',
-    obs.autonomie || '', obs.social || '', obs.transitions || '',
-    obs.bienetre || '', obs.forces || '', obs.appuisExistants || '', obs.complement || ''
-  ].join(' ').toLowerCase();
-
-  const signauxDetectes = [];
-  const hypothesesInferees = [];
-  const dimsInferees = new Set();
-
-  Object.entries(SIGNAUX_OBSERVATION).forEach(([key, signal]) => {
-    const found = signal.patterns.some(p => texte.includes(p.toLowerCase()));
-    if (found) {
-      signauxDetectes.push(key);
-      signal.dimensions.forEach(d => dimsInferees.add(d));
-      signal.hypotheses.forEach(h => {
-        if (!hypothesesInferees.includes(h) && hypothesesInferees.length < 5) {
-          hypothesesInferees.push(h);
-        }
-      });
-    }
-  });
-
-  return { signauxDetectes, hypothesesInferees, dimsInferees: [...dimsInferees] };
-}
-
-// ============================================================
-// MOTEUR À DEUX NIVEAUX
-// ============================================================
-
-// Détection du trouble dans les réponses de l'enseignant
-function detectTroubles(types) {
-  const t = (types || []).join(' ').toLowerCase();
-  const detected = [];
-  Object.values(TROUBLES_DB).forEach(trouble => {
-    if (trouble.aliases.some(alias => t.includes(alias.toLowerCase()))) {
-      detected.push(trouble.id);
-    }
-  });
-  // Si rien détecté : on ne pousse pas 'general' dans TROUBLES_DB
-  // Le moteur de dimensions/signaux prendra seul le relais
-  return [...new Set(detected)];
-}
-
-// Inférence des dimensions impactées à partir des troubles ET des observations
-function inferDimensions(troubleIds, obs) {
-  const dims = new Set();
-
-  // Niveau 1 : dimensions issues des troubles déclarés
-  troubleIds.forEach(id => {
-    (TROUBLE_TO_DIMENSIONS[id] || []).forEach(d => dims.add(d));
-  });
-
-  // Niveau 2 : dimensions inférées depuis les observations (lecture fonctionnelle)
-  const o = [obs.participation, obs.consignes, obs.autonomie, obs.social, obs.transitions, obs.bienetre].join(' ').toLowerCase();
-
-  if (/distrait|dans la lune|décroche|ne suit pas|concentration/i.test(o))   dims.add('attention');
-  if (/oubli|désorganis|planif|démarre pas|perd le fil|ne sait pas commencer/i.test(o)) dims.add('fonctionsExecutives');
-  if (/consigne.*comprend pas|comprend pas.*consigne|oral.*mieux que.*écrit|mieux.*à l.oral/i.test(o)) dims.add('langageOral');
-  if (/lire|lecture|écriture difficile|orthographe|copie coûteuse/i.test(o)) dims.add('langageEcrit');
-  if (/calcul|mathématiques|nombre|procédure/i.test(o))                    dims.add('mathematiques');
-  if (/écriture.*lent|geste difficile|motricité|maladresse|main fatiguée/i.test(o)) dims.add('motricite');
-  if (/isolé|pas d.ami|évite les autres|difficultés relationnelles|reste dans son coin/i.test(o)) dims.add('social');
-  if (/stress|anxieux|peur de se tromper|pleure|évitement|angoisse|frustration/i.test(o)) dims.add('emotionnel');
-  if (/bruit|lumière|sensoriel|surcharge sensorielle/i.test(o))            dims.add('sensoriel');
-  if (/ne démarre pas seul|transitions difficiles|besoin d.être relancé|matériel en désordre/i.test(o)) dims.add('autonomie');
-
-  return [...dims];
-}
-
-// Construction des pistes à partir des troubles actifs + dimensions
-function getPistesForProfile(types, obs) {
-  const troubleIds = detectTroubles(types);
-  const dims = inferDimensions(troubleIds, obs || {});
-
-  // Collecte des aménagements depuis les troubles détectés
-  const cats = ['consignes', 'supports', 'organisation', 'amenagements', 'environnement'];
-  const result = {};
-
-  cats.forEach(cat => {
-    const seen = new Set();
-    const merged = [];
-
-    troubleIds.forEach(id => {
-      const trouble = TROUBLES_DB[id];
-      if (!trouble) return;
-      const pistes = (trouble.amenagements || {})[cat] || [];
-      pistes.slice(0, 3).forEach(p => {
-        if (!seen.has(p) && merged.length < 5) { seen.add(p); merged.push(p); }
-      });
-    });
-
-    // Si aucun trouble précis : pistes générales basées sur les dimensions
-    if (merged.length === 0) {
-      const generalPistes = getGeneralPistesForDimensions(dims, cat);
-      generalPistes.forEach(p => {
-        if (!seen.has(p) && merged.length < 5) { seen.add(p); merged.push(p); }
-      });
-    }
-
-    result[cat] = merged;
-  });
-
-  return result;
-}
-
-// Pistes générales par dimension (utilisées quand aucun trouble précis)
-function getGeneralPistesForDimensions(dims, cat) {
-  const map = {
-    attention: {
-      consignes: ["Donner une consigne à la fois","Vérifier la compréhension avant démarrage"],
-      supports: ["Timer visuel","Check-list des étapes","Code couleur"],
-      organisation: ["Alterner les types de tâches","Micro-pauses régulières"],
-      amenagements: ["Envisager un PAI","Contacter le centre PMS"],
-      environnement: ["Réduire les distracteurs","Signal discret de recentrage"]
-    },
-    fonctionsExecutives: {
-      consignes: ["Décomposer en étapes numérotées","Fournir une checklist"],
-      supports: ["Planner visuel","Modèles de procédures"],
-      organisation: ["Micro-objectifs","Vérifications intermédiaires"],
-      amenagements: ["Étayage structuré"],
-      environnement: ["Routines stables","Environnement prévisible"]
-    },
-    langageOral: {
-      consignes: ["Phrases courtes","Reformulation","Support visuel en appui"],
-      supports: ["Pictos","Lexique illustré","Schémas"],
-      organisation: ["Temps de traitement supplémentaire"],
-      amenagements: ["Logopède spécialisé"],
-      environnement: ["Pas d'oral improvisé public"]
-    },
-    langageEcrit: {
-      consignes: ["Lire la consigne à voix haute","Réduire la densité textuelle"],
-      supports: ["Synthèse vocale","Police lisible","Correcteur"],
-      organisation: ["Temps supplémentaire","Dissocier lecture et compétence évaluée"],
-      amenagements: ["PAI avec tiers-temps"],
-      environnement: ["Pas de lecture à voix haute non préparée"]
-    },
-    emotionnel: {
-      consignes: ["Clarifier l'attendu","Formuler positivement"],
-      supports: ["Repères stables","Plan de travail visible"],
-      organisation: ["Fractionner les tâches","Sas de reprise"],
-      amenagements: ["Signal discret enseignant-élève","Contact PMS"],
-      environnement: ["Climat sécurisant","Valoriser les efforts"]
-    },
-    autonomie: {
-      consignes: ["Annoncer les transitions à l'avance","Étapes visibles"],
-      supports: ["Agenda visuel","Checklist matériel"],
-      organisation: ["Rituels stables","Préparer les changements"],
-      amenagements: ["PAI si besoin"],
-      environnement: ["Routines de début et fin de cours"]
-    },
-    social: {
-      consignes: ["Expliciter les codes implicites si besoin"],
-      supports: ["Scénarios sociaux si pertinent"],
-      organisation: ["Favoriser le duo stable","Éviter les grands groupes non préparés"],
-      amenagements: ["Observation en équipe"],
-      environnement: ["Valoriser les contributions individuelles"]
-    },
-    sensoriel: {
-      consignes: ["Anticiper les changements sensoriels"],
-      supports: ["Casque anti-bruit si pertinent"],
-      organisation: ["Espace calme accessible"],
-      amenagements: ["Contacter le PMS"],
-      environnement: ["Réduire bruit et stimulations excessives"]
-    },
-    motricite: {
-      consignes: ["Réduire les tâches graphiques","Fournir les notes"],
-      supports: ["Clavier","Photocopies","Plan incliné"],
-      organisation: ["Temps majoré","Évaluer le fond séparément"],
-      amenagements: ["Bilan ergothérapeutique"],
-      environnement: ["Espace suffisant","Matériel adapté"]
-    },
-    mathematiques: {
-      consignes: ["Étapes explicites","Verbaliser la stratégie"],
-      supports: ["Tables de référence","Schémas","Calculatrice"],
-      organisation: ["Moins d'exercices, plus de temps"],
-      amenagements: ["PAI avec calculatrice"],
-      environnement: ["Pas de calcul mental sous pression publique"]
-    }
-  };
-
-  const pistes = [];
-  dims.forEach(dim => {
-    const p = (map[dim] || {})[cat] || [];
-    p.forEach(item => { if (pistes.length < 3 && !pistes.includes(item)) pistes.push(item); });
-  });
-  return pistes;
-}
-
-// Construction des informations contextuelles sur les troubles détectés
-function getTroubleContext(types, obs) {
-  const troubleIds = detectTroubles(types);
-  const dims = inferDimensions(troubleIds, obs || {});
-  const context = {
-    troublesLabel: [],
-    forcesGlobales: [],
-    vigilancesGlobales: [],
-    besoinsGlobaux: [],
-    dimensionsActives: dims.map(d => (DIMENSIONS_OBSERVATION[d] || {}).label || d)
-  };
-
-  troubleIds.forEach(id => {
-    const t = TROUBLES_DB[id];
-    if (!t) return;
-    context.troublesLabel.push(t.label);
-    (t.forcesPossibles || []).slice(0, 2).forEach(f => {
-      if (!context.forcesGlobales.includes(f)) context.forcesGlobales.push(f);
-    });
-    (t.vigilances || []).slice(0, 1).forEach(v => {
-      if (!context.vigilancesGlobales.includes(v)) context.vigilancesGlobales.push(v);
-    });
-    (t.besoinsPedagogiques || []).slice(0, 2).forEach(b => {
-      if (!context.besoinsGlobaux.includes(b)) context.besoinsGlobaux.push(b);
-    });
-  });
-
-  return context;
-}
-// ============================================================
-// SCORE ENGINE — avec gestion des négations et combinaisons
-// ============================================================
-
-// Teste si une phrase contient une négation avant le mot
-function isNeg(text) {
-  return /\b(ne|n'|pas|non|jamais|aucun|sans|peu|rarement)\b.{0,30}/i.test(text);
-}
-
-// Teste positif en tenant compte des négations
-function matchPos(text, posPattern, negPattern) {
-  if (negPattern && negPattern.test(text)) return false;
-  return posPattern.test(text) && !isNeg(text.match(posPattern)?.[0] ? text.substring(0, text.search(posPattern) + 30) : '');
-}
-
-// Teste négatif en tenant compte des négations
-function matchNeg(text, pattern) {
-  const m = text.match(pattern);
-  if (!m) return false;
-  // Si le mot trouvé est précédé d'une négation dans les 30 caractères avant, ce n'est PAS négatif
-  const idx = text.search(pattern);
-  const before = text.substring(Math.max(0, idx - 35), idx);
-  if (/\b(ne|n'|pas|non|jamais|aucun|sans|peu|rarement)\s*$/i.test(before)) return false;
-  return true;
-}
-
-function computeScores() {
-  const d = state.data;
-  const obs = d.obs;
-  let inc = 62, soc = 62, aut = 62, bien = 62, lang = 82;
-
-  // --- PARTICIPATION → inclusion + social ---
-  const partNeg = matchNeg(obs.participation, /retrait|lune|décroché|absent|jamais|ne\s+participe|ne\s+répond|invisible/i);
-  const partPos = matchNeg(obs.participation, /ne\s+participe\s+pas|ne\s+répond\s+pas/) === false
-               && /participe|lève\s+la\s+main|répond|actif|engage|volontaire/i.test(obs.participation);
-  if (partNeg) { inc -= 18; soc -= 12; }
-  if (partPos) { inc += 10; soc += 10; }
-
-  // --- CONSIGNES → inclusion ---
-  const consNeg = matchNeg(obs.consignes, /perd|ne\s+comprend|difficile|perdu|long|complexe|débordé/i);
-  const consPos = /comprend\s+bien|comprend\s+facilement|pas\s+de\s+problème|adapté|exemple.*aide|visuel.*aide/i.test(obs.consignes);
-  if (consNeg) inc -= 16;
-  if (consPos) inc += 8;
-
-  // --- AUTONOMIE ---
-  const autNeg = matchNeg(obs.autonomie, /ne\s+démarre\s+pas|ne\s+peut\s+pas|relancé|bloqué|ne\s+demande\s+pas|difficile|abandonne/i);
-  const autPos = /démarre\s+seul|autonome|peut\s+commencer|demande\s+de\s+l.aide\s+facilement|se\s+débrouille/i.test(obs.autonomie);
-  if (autNeg) aut -= 22;
-  if (autPos) aut += 15;
-
-  // --- SOCIAL ---
-  const socNeg = matchNeg(obs.social, /isolé|seul|évite|exclut|conflit|pas\s+d.ami|sans\s+ami|rejeté/i);
-  const socPos = /ami|copain|lien|intégré|groupe|joue\s+avec|s.entend\s+bien/i.test(obs.social);
-  if (socNeg) soc -= 22;
-  if (socPos) soc += 14;
-
-  // --- TRANSITIONS ---
-  const transNeg = matchNeg(obs.transitions, /difficile|énerve|colère|refuse|lent|bloqué|ne\s+supporte\s+pas|panique/i);
-  const transPos = /bien|sans\s+problème|facile|s.adapte|souple/i.test(obs.transitions);
-  if (transNeg) { aut -= 12; inc -= 6; bien -= 8; }
-  if (transPos) { aut += 5; }
-
-  // --- BIEN-ÊTRE ---
-  const bienNeg = matchNeg(obs.bienetre, /stress|fatigué|anxieux|tendu|découragé|pleure|frustration|débordé|épuisé|angoissé/i);
-  const bienPos = /motivé|calme|serein|apprécie|aime|enthousiaste|heureux|plaisir/i.test(obs.bienetre);
-  const bienSurcharge = matchNeg(obs.bienetre, /épuisé|s.effondre|ne\s+supporte\s+plus|abandon|détresse/i);
-  if (bienNeg) bien -= 20;
-  if (bienSurcharge) { bien -= 15; soc -= 5; aut -= 5; } // surcharge impacte tout
-  if (bienPos) bien += 14;
-
-  // --- LANGUE ---
-  const langNeg = /pas\s+sa\s+langue|barrière|ne\s+comprend\s+pas\s+le\s+français|langue\s+maternelle.*non|non.*langue|primo|allophone/i.test(obs.langue);
-  const langPos = /francophone\s+natif|langue\s+maternelle.*oui|oui.*langue|pas\s+de\s+problème\s+(de\s+)?langue|parle\s+bien/i.test(obs.langue);
-  if (langNeg) lang -= 45;
-  if (langPos) lang = Math.max(lang, 88);
-
-  // --- CROISEMENTS DE PROFILS (bonus/malus combinés) ---
-  const t = (d.typesBesoin || []).join(' ').toLowerCase();
-  // TDAH + anxiété = impact bien-être amplifié
-  if (t.includes('tdah') && (t.includes('anxieux') || t.includes('anxiété'))) { bien -= 8; aut -= 5; }
-  // TSA + transitions difficiles = impact autonomie amplifié
-  if (t.includes('tsa') && transNeg) { aut -= 8; bien -= 5; }
-  // Dys + barrière langue = impact inclusion amplifié
-  if ((t.includes('dys') || t.includes('dysphasie')) && langNeg) { inc -= 10; }
-  // Dyspraxie + dyslexie = double impact sur l'autonomie et l'inclusion
-  if ((t.includes('dyspraxie') || t.includes('tdc')) && t.includes('dyslexie')) { aut -= 6; inc -= 6; }
-  // Dysexécutif + TDAH = surcharge de la mémoire de travail
-  if ((t.includes('dysexec') || t.includes('dysexéc')) && t.includes('tdah')) { aut -= 8; inc -= 5; }
-  // Dysphasie = impact supplémentaire sur la participation
-  if (t.includes('dysphasie') && partNeg) { soc -= 8; }
-  // Aucun diagnostic + signaux multiples = vigilance inclusion
-  if (!d.diagnostic || d.diagnostic === 'Aucune démarche') {
-    if (partNeg && autNeg) inc -= 8;
-  }
-
-  const clamp = v => Math.min(100, Math.max(10, Math.round(v)));
-  d.scores = { inclusion: clamp(inc), social: clamp(soc), autonomie: clamp(aut), bienetre: clamp(bien), langue: clamp(lang) };
-}
-
-function getStatut(score) {
-  if (score >= 72) return 'favorable';
-  if (score >= 46) return 'surveiller';
-  return 'preoccupant';
-}
-
-function buildAnalysis() {
-  computeScores();
-  const d = state.data;
-  const s = d.scores;
-  const obs = d.obs;
-  const p = d.pseudo;
-  const t = (d.typesBesoin || []).join(' ').toLowerCase();
-
-  const asavoir    = [];
-  const vigilance  = [];
-  const hypotheses = [];
-  const signauxAlerte = [];
-
-  // ── SCORES locaux pour les conditions ──
-  const partNeg  = matchNeg(obs.participation || '', /retrait|lune|décroché|absent|jamais|ne\s+participe|invisible/i);
-  const consNeg  = matchNeg(obs.consignes || '', /perd|ne\s+comprend|difficile|perdu|long|complexe/i);
-  const autNeg   = matchNeg(obs.autonomie || '', /ne\s+démarre\s+pas|relancé|bloqué|ne\s+peut\s+pas/i);
-  const bienNeg  = matchNeg(obs.bienetre || '', /stress|fatigué|anxieux|tendu|découragé|pleure|frustration|épuisé/i);
-  const transNeg = matchNeg(obs.transitions || '', /difficile|énerve|colère|refuse|lent|bloqué|abrupt|imprévu/i);
-  const langNeg  = /pas\s+sa\s+langue|barrière|primo|allophone|maternel.*non/i.test(obs.langue || '');
-
-  // ── MOTEUR SIGNAUX (lecture fonctionnelle depuis les mots de l'enseignant) ──
-  const signauxDetectes = detectSignaux(obs);
-  signauxDetectes.hypothesesInferees.forEach(h => {
-    if (!hypotheses.includes(h)) hypotheses.push(h);
-  });
-
-  // ── CONTEXTE TROUBLE (forces, vigilances, dimensions depuis le diagnostic) ──
-  const ctx = getTroubleContext(d.typesBesoin, obs);
-
-  // ── À SAVOIR ──
-  if (d.diagnostic && d.diagnostic !== 'Aucune démarche en cours' && d.diagnostic !== 'Je ne sais pas') {
-    const types = d.typesBesoin.length ? ` (${d.typesBesoin.join(', ')})` : '';
-    asavoir.push(`Situation diagnostique : ${d.diagnostic}${types}. Ces éléments orientent les pistes proposées.`);
-  }
-  if (obs.forces && obs.forces.length > 5) {
-    asavoir.push(`Points d'appui observés : ${obs.forces.substring(0, 120)}${obs.forces.length > 120 ? '…' : ''}`);
-  }
-  if (obs.appuisExistants && obs.appuisExistants.length > 5) {
-    asavoir.push(`Ce qui aide déjà : ${obs.appuisExistants.substring(0, 120)}${obs.appuisExistants.length > 120 ? '…' : ''}`);
-  }
-  if (/participe|répond|actif|lève\s+la\s+main|volontaire/i.test(obs.participation || '')) {
-    asavoir.push(`${p} montre des capacités de participation dans certains contextes — un appui à valoriser.`);
-  }
-  if (/motivé|apprécie|aime|enthousiaste|plaisir|sciences|manuel|art|sport/i.test(obs.bienetre || '')) {
-    asavoir.push(`Des domaines semblent susciter une motivation réelle — des leviers précieux pour les aménagements.`);
-  }
-  if (/exemple|visuel|schéma|démonstration|montre/i.test(obs.consignes || '')) {
-    asavoir.push(`Les exemples concrets et les supports visuels semblent faciliter la compréhension — une piste directement exploitable.`);
-  }
-  if (/ami|copain|lien|s.entend\s+bien/i.test(obs.social || '')) {
-    asavoir.push(`Des liens positifs avec certains pairs existent — ils peuvent constituer un appui social et pédagogique.`);
-  }
-  if (d.age) {
-    asavoir.push(`Âge : ${d.age} — à prendre en compte dans la lecture développementale de la situation.`);
-  }
-
-  // Dimensions actives (union signaux + troubles)
-  const dimsActives = [...new Set([
-    ...ctx.dimensionsActives,
-    ...signauxDetectes.dimsInferees.map(dim => (DIMENSIONS_OBSERVATION[dim] || {}).label || dim)
-  ])];
-  if (dimsActives.length > 0) {
-    asavoir.push(`Dimensions fonctionnelles identifiées : ${dimsActives.join(', ')}.`);
-  }
-  if (ctx.forcesGlobales.length > 0) {
-    asavoir.push(`Forces possibles associées au profil : ${ctx.forcesGlobales.join(', ')}.`);
-  }
-  if (obs.complement && obs.complement.length > 5) {
-    asavoir.push(`Précision apportée par l'enseignant : "${obs.complement.substring(0, 150)}"`);
-  }
-
-  // ── HYPOTHÈSES PÉDAGOGIQUES supplémentaires (croisement observations + scores) ──
-  if (transNeg) {
-    hypotheses.push(`Le besoin de prévisibilité semble central — les changements non anticipés paraissent coûteux pour ${p}.`);
-  }
-  if (consNeg && /visuel|exemple|schéma|montre/i.test(obs.consignes || '')) {
-    hypotheses.push(`${p} semble traiter mieux l'information par le canal visuel et concret que par le canal verbal seul.`);
-  }
-  if (autNeg && !bienNeg) {
-    hypotheses.push(`Les difficultés d'autonomie pourraient relever davantage d'un manque de structuration de la tâche que d'un manque de motivation.`);
-  }
-  if (bienNeg && partNeg) {
-    hypotheses.push(`Le retrait observé pourrait être une stratégie d'évitement face à une surcharge — plutôt qu'un désintérêt.`);
-  }
-  if (obs.forces && obs.forces.length > 5) {
-    hypotheses.push(`Les contextes favorables décrits suggèrent que ${p} dispose de vraies ressources — à partir desquelles construire.`);
-  }
-  // Dédupliquer
-  const hypothesesUniq = [...new Set(hypotheses)].slice(0, 5);
-
-  // ── ÊTRE VIGILANT ──
-  if (s.autonomie < 52) vigilance.push(`Les difficultés à démarrer seul·e ou à demander de l'aide méritent un soutien structuré et progressif.`);
-  if (s.social < 52)    vigilance.push(`Les interactions sociales semblent fragilisées — à observer pour prévenir un isolement progressif.`);
-  if (transNeg)         vigilance.push(`Les transitions sont une zone de tension identifiée — les anticiper et les ritualiser pourrait faire une vraie différence.`);
-  if (s.bienetre < 48)  vigilance.push(`Les signes de stress ou de fatigue méritent attention — ils peuvent impacter l'ensemble des apprentissages.`);
-  if (s.inclusion < 48) vigilance.push(`L'accès aux apprentissages semble limité par plusieurs facteurs cumulés — une révision des aménagements serait utile.`);
-  if (t.includes('tdah') && (t.includes('anxieux') || t.includes('anxiété'))) {
-    vigilance.push(`La combinaison TDAH et anxiété peut créer une surcharge importante — les deux dimensions méritent d'être prises en compte simultanément.`);
-  }
-  if (!d.diagnostic || d.diagnostic === 'Aucune démarche en cours') {
-    if (s.inclusion < 50 || s.autonomie < 50) {
-      vigilance.push(`Aucune évaluation en cours malgré les difficultés observées — une concertation avec le centre PMS pourrait être une étape utile.`);
-    }
-  }
-  // Vigilances spécifiques aux troubles détectés
-  ctx.vigilancesGlobales.forEach(v => {
-    const vCap = v.charAt(0).toUpperCase() + v.slice(1) + '.';
-    if (!vigilance.some(e => e.includes(v.substring(0, 20)))) vigilance.push(vCap);
-  });
-
-  // ── SIGNAUX D'ALERTE ──
-  if (s.bienetre < 32) signauxAlerte.push(`Signes de détresse émotionnelle significatifs — un échange avec les parents et le centre PMS semble important.`);
-  if (s.social < 30)   signauxAlerte.push(`Isolement social marqué et persistant — une observation approfondie et un échange en équipe sont recommandés.`);
-  if (matchNeg(obs.bienetre || '', /épuisé|s.effondre|ne\s+supporte\s+plus|abandonne|détresse|pleure\s+souvent/i)) {
-    signauxAlerte.push(`Des signes d'épuisement scolaire ou de souffrance visible ont été mentionnés — une attention urgente est nécessaire.`);
-  }
-  if (t.includes('tsa') && matchNeg(obs.transitions || '', /panique|crise|refuse|bloqué/i)) {
-    signauxAlerte.push(`Les réactions aux transitions semblent particulièrement intenses — une consultation spécialisée pourrait être envisagée.`);
-  }
-
-  // ── PISTES ──
-  const pistes = getPistesForProfile(d.typesBesoin, obs);
-
-  // ── BIEN-ÊTRE ──
-  let bien_etre_detail = '';
-  if (s.bienetre < 35) {
-    bien_etre_detail = `${p} semble traverser une période de tension ou de surcharge importante. Les signaux observés méritent une attention prioritaire — identifier les moments où ${p} semble le plus apaisé·e pourrait aider à construire des espaces de respiration dans la journée scolaire.`;
-  } else if (s.bienetre < 55) {
-    bien_etre_detail = `Le bien-être de ${p} semble fragile par moments. Il est utile d'identifier les activités qui lui procurent plaisir ou sécurité, et de les utiliser comme points d'appui.`;
-  } else {
-    bien_etre_detail = `Globalement, ${p} semble trouver des moments de motivation et d'engagement. Ces appuis sont précieux et méritent d'être cultivés dans la construction des aménagements.`;
-  }
-
-  // ── LINGUISTIQUE ──
-  const linguistique_detail = s.langue >= 78
-    ? `La langue d'enseignement ne semble pas constituer une barrière pour ${p}. Les difficultés observées sont à chercher dans d'autres dimensions.`
-    : `La dimension linguistique pourrait jouer un rôle dans certaines des difficultés observées. Il vaut la peine de distinguer soigneusement ce qui relève de la maîtrise de la langue et ce qui relève d'autres facteurs.`;
-
-  // ── CONCLUSION ──
-  let conclusion = '';
-  if (d.demande && d.demande.includes('concertation')) {
-    conclusion = `Cette fiche peut servir de base pour une discussion en équipe. Elle rassemble les observations, les hypothèses et les pistes — sans prétendre à l'exhaustivité. L'équipe connaît ${p} bien mieux que cet outil.`;
-  } else if (d.demande && d.demande.includes('aménagements')) {
-    conclusion = `Les ajustements proposés sont des points de départ à tester — pas des prescriptions. Commencez par un ou deux, observez l'effet, ajustez. C'est cette logique d'expérimentation progressive qui est la plus utile sur le terrain.`;
-  } else if (d.demande && d.demande.includes('comprendre')) {
-    conclusion = `Cette analyse tente de donner du sens à ce que vous observez — sans certitude. Les hypothèses sont des pistes de lecture, à confronter avec votre propre connaissance de ${p} et avec l'équipe.`;
-  } else {
-    conclusion = `Cette analyse est une base de réflexion, pas une vérité définitive. Vous connaissez ${p} bien mieux que cet outil. Les pistes sont là pour ouvrir des possibilités — adaptez-les, partagez-les, faites confiance à votre regard professionnel.`;
-  }
-
-  return {
-    type: 'analyse_finale',
-    hypotheses: hypothesesUniq,
-    indices: {
-      inclusion_pedagogique:      { score: s.inclusion, statut: getStatut(s.inclusion), explication: `Évaluation de l'accessibilité des apprentissages et de la participation active — dimensions : ${dimsActives.slice(0,3).join(', ') || 'générales'}.` },
-      participation_sociale:      { score: s.social,    statut: getStatut(s.social),    explication: `Basé sur la qualité des interactions avec les pairs et l'engagement collectif décrit.` },
-      autonomie:                  { score: s.autonomie, statut: getStatut(s.autonomie), explication: `Basé sur la capacité à démarrer seul·e, gérer les transitions et demander de l'aide.` },
-      bien_etre:                  { score: s.bienetre,  statut: getStatut(s.bienetre),  explication: `Basé sur les signes de stress, de fatigue, de surcharge et de motivation observés.` },
-      accessibilite_linguistique: { score: s.langue,    statut: getStatut(s.langue),    explication: `Basé sur la maîtrise de la langue d'enseignement et la compréhension des consignes.` }
-    },
-    appuis: asavoir.filter(a => a.includes("appui") || a.includes("soutient") || a.includes("aide") || a.includes("force") || a.includes("motivé") || a.includes("lien") || a.includes("visuel")),
-    raisonnement: dimsActives.length > 0
-      ? `Dimensions fonctionnelles actives : <strong>${dimsActives.join(', ')}</strong>.<br>Ces dimensions ont été inférées depuis ${signauxDetectes.signauxDetectes.length > 0 ? 'les observations et ' : ''}le profil diagnostique déclaré. Elles orientent les hypothèses et les ajustements proposés.`
-      : null,
-    asavoir, vigilance, pistes, bien_etre_detail, linguistique_detail,
-    signaux_alerte: signauxAlerte, conclusion
-  };
-}
-
-
-// ============================================================
-// CONVERSATION TREE
-// ============================================================
-const QUESTIONS = {
-  context: () => `Bonjour. Je suis SOA — Soutien à l'Observation et aux Aménagements.
-
-Je suis là pour vous accompagner dans la réflexion autour d'un élève qui vous préoccupe. Ensemble, nous allons essayer de mieux comprendre ce qui se passe pour lui et d'identifier des pistes concrètes à tester en classe.
-
-Avant de commencer, quelques points importants :
-Je ne pose pas de diagnostic — je suis un outil de réflexion pédagogique, pas un professionnel de santé.
-Je ne remplace pas votre équipe, votre centre PMS ou un spécialiste.
-Je ne conserve aucune donnée — tout reste dans votre navigateur, uniquement le temps de notre échange.
-Merci d'utiliser un prénom fictif pour l'élève dont vous allez me parler.
-
-Quand vous êtes prêt·e — qu'est-ce qui vous amène aujourd'hui ?`,
-  diagnostic:        (p) => `Je vois. Est-ce qu'un diagnostic ou une évaluation a déjà été fait pour ${p} — ou est-ce qu'on travaille uniquement sur l'observation pour l'instant ?`,
-  moments_difficiles:(p) => `Merci. Dans quels moments les difficultés de ${p} se voient-elles le plus ? Y a-t-il des situations qui semblent déclencher ou aggraver ce que vous observez ?`,
-  moments_positifs:  (p) => `Et à l'inverse — quand est-ce que ça se passe mieux pour ${p} ? Quels moments, quelles activités, quels contextes semblent lui réussir davantage ?`,
-  forces:            (p) => `Chez ${p}, qu'est-ce qui fonctionne bien — ou mieux que le reste ? Qu'est-ce qui vous montre qu'il ou elle a des ressources, même dans les moments difficiles ?`,
-  appuisExistants:   (p) => `Est-ce que quelque chose aide déjà, même un peu ? Un type de support, une façon de travailler, un adulte, un contexte particulier ?`,
-  participation:     (p) => `Merci. Comment se passe la participation de ${p} dans les activités collectives — est-ce qu'il ou elle s'engage, prend la parole, ou plutôt s'efface ?`,
-  consignes:         (p) => `Et les consignes — est-ce que ${p} semble les comprendre ? Y a-t-il des formats qui passent mieux (oral, écrit, exemple concret, visuel) ?`,
-  autonomie:         (p) => `Est-ce que ${p} peut démarrer une tâche seul·e, ou a-t-il besoin d'être relancé ? Quand ça bloque, est-ce qu'il ou elle demande de l'aide ?`,
-  social:            (p) => `Côté relations avec les autres élèves — comment ça se passe ? Y a-t-il des liens, des tensions, ou plutôt de l'isolement ?`,
-  bienetre:          (p) => `Comment vous sentez ${p} globalement — stressé·e, fatigué·e, ou au contraire motivé·e dans certains moments ?`,
-  langue:            (p) => `La langue d'enseignement est-elle sa langue maternelle ? Ou est-ce que ça pourrait jouer un rôle dans ce que vous observez ?`,
-  complement:        (p) => `On a fait un bon tour ensemble. Avant que je prépare l'analyse — est-ce qu'il y a quelque chose sur ${p} que vous n'avez pas encore pu dire ?`,
-};
-
-const STEPS_ORDER = ['context','pseudo','demande','niveau','age','diagnostic','moments_difficiles','moments_positifs','forces','appuisExistants','participation','consignes','autonomie','social','bienetre','langue','complement'];
-
-function getNextStep(current) {
-  const idx = STEPS_ORDER.indexOf(current);
-  return STEPS_ORDER[idx + 1] || 'final';
-}
-
-// ============================================================
-// CHOICE SETS
-// ============================================================
-const CHOICES = {
-  demande: [
-    'Mieux comprendre ce que vit cet élève',
-    'Trouver des aménagements concrets',
-    "Préparer une concertation d'équipe",
-    'Constituer une fiche de synthèse',
-  ],
-  niveau: ['Maternelle (M1-M3)', '1re-2e primaire', '3e-4e primaire', '5e-6e primaire', '1re-2e secondaire', '3e-6e secondaire'],
-  age: ['4-5 ans', '6-7 ans', '8-9 ans', '10-11 ans', '12-13 ans', '14-15 ans', '16-18 ans'],
-  diagnostic: ['Oui, un diagnostic est posé', 'Une évaluation est en cours', 'Des difficultés suspectées', 'Aucune démarche en cours', 'Je ne sais pas'],
-  typesBesoin: ['TDAH', 'TSA', 'Dyslexie', 'Dysorthographie', 'Dyscalculie', 'Dyspraxie / TDC', 'Dysphasie', 'Dysexécutif', 'Trouble anxieux', 'Trouble moteur', 'Trouble sensoriel', 'Trouble du langage', 'Autre', 'Je préfère ne pas préciser'],
-};
-
-// ============================================================
-// INIT
-// ============================================================
-function startApp() {
-  document.getElementById('landing').style.display = 'none';
-  document.getElementById('app').classList.add('active');
-  document.getElementById('userInput').addEventListener('input', () => {
-    document.getElementById('sendBtn').disabled = document.getElementById('userInput').value.trim() === '';
-  });
-  initState();
-  resetUI();
-  setTimeout(() => {
-    addBotMessage(QUESTIONS.context(), true);
-  }, 300);
-}
-
-function startDemo() {
-  document.getElementById('landing').style.display = 'none';
-  document.getElementById('app').classList.add('active');
-  document.getElementById('userInput').addEventListener('input', () => {
-    document.getElementById('sendBtn').disabled = document.getElementById('userInput').value.trim() === '';
-  });
-  initState();
-  resetUI();
-  runDemo();
-}
-
-function goHome() {
-  document.getElementById('app').classList.remove('active');
-  document.getElementById('landing').style.display = '';
-}
-
-function resetApp() {
-  initState();
-  resetUI();
-  setTimeout(() => addBotMessage(QUESTIONS.context()), 300);
-}
-
-function resetUI() {
-  document.getElementById('chatContainer').innerHTML = '';
-  ficheContent = '';
-  updateProgress(0);
-}
-
-// ============================================================
-// MESSAGING
-// ============================================================
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-}
-
-function sendMessage() {
-  const input = document.getElementById('userInput');
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  input.style.height = 'auto';
-  document.getElementById('sendBtn').disabled = true;
-  addUserMessage(text);
-  processInput(text);
-}
-
 function processInput(text) {
-  const step = state.step;
-
+  const step = state.step; const t = text.toLowerCase();
+  
   switch(step) {
-
     case 'context':
       state.data.obs.histoire = text;
-      state.step = 'pseudo';
-      updateProgress(1);
-      setTimeout(() => {
-        addBotMessage(`Merci de me partager ça. Pour qu'on puisse parler de cet élève sans utiliser son vrai prénom — quel prénom fictif voulez-vous utiliser ?`);
-      }, 400);
+      // SKIP LOGIC
+      if (/ami|seul|isolé|copain/i.test(t)) state.data.skipSocial = true;
+      if (/consigne|comprend|instruction/i.test(t)) state.data.skipConsignes = true;
+      if (/démarre|seul|bloqué/i.test(t)) state.data.skipAutonomie = true;
+      if (/stress|fatigué|motivé/i.test(t)) state.data.skipBienetre = true;
+      
+      state.step = 'pseudo'; updateProgress(1);
+      setTimeout(() => addBotMessage(`Pour préserver l'anonymat, quel prénom fictif donnerons-nous à l'élève ?`), 400);
       break;
 
     case 'pseudo':
-      // Stocker le pseudo proprement — premier mot non vide
-      const cleanPseudo = text.trim().split(/\s+/)[0];
-      state.data.pseudo = cleanPseudo.length > 0 ? cleanPseudo : "l'élève";
-      state.step = 'demande';
-      updateProgress(1);
+      state.data.pseudo = text.trim().split(/\s+/)[0] || "l'élève";
+      state.step = 'demande'; updateProgress(1);
       setTimeout(() => {
-        addBotMessage(`Bien. Et qu'est-ce que vous aimeriez obtenir à l'issue de cet échange avec moi ?`);
-        showChoices(CHOICES.demande, (choice) => {
-          state.data.demande = choice;
-          addUserMessage(choice);
-          state.step = 'niveau';
-          updateProgress(2);
+        addBotMessage(`Bien. Quel est votre objectif prioritaire pour ${state.data.pseudo} ?`);
+        showChoices(['Mieux comprendre', 'Aménagements concrets', 'Concertation'], (c) => {
+          state.data.demande = c; addUserMessage(c);
+          state.step = 'niveau'; updateProgress(2);
           setTimeout(() => {
-            addBotMessage(`D'accord. Pour mieux imaginer le quotidien de ${state.data.pseudo}, dans quel niveau scolaire est-il ou elle ?`);
-            showChoices(CHOICES.niveau, (niv) => {
-              state.data.niveau = niv;
-              addUserMessage(niv);
+            addBotMessage(`Dans quel niveau scolaire est l'élève ?`);
+            showChoices(['Maternelle', 'Primaire', 'Secondaire'], (n) => {
+              state.data.niveau = n; addUserMessage(n);
               state.step = 'age';
-              updateProgress(2);
               setTimeout(() => {
-                addBotMessage(`Et quel est son âge approximatif ?`);
-                showChoices(CHOICES.age, (a) => {
-                  state.data.age = a;
-                  addUserMessage(a);
-                  state.step = 'diagnostic';
-                  updateProgress(3);
+                addBotMessage(`Son âge ?`);
+                showChoices(['4-6 ans', '7-9 ans', '10-12 ans', '13-15 ans', '16+'], (a) => {
+                  state.data.age = a; addUserMessage(a);
+                  state.step = 'diagnostic'; updateProgress(3);
                   setTimeout(() => {
-                    addBotMessage(QUESTIONS.diagnostic(state.data.pseudo));
-                    showChoices(CHOICES.diagnostic, (c) => {
-                      state.data.diagnostic = c;
-                      addUserMessage(c);
-                      if (c === 'Oui, un diagnostic est posé' || c === 'Une évaluation est en cours') {
+                    addBotMessage(`Y a-t-il un diagnostic posé ?`);
+                    showChoices(['Oui', 'En cours', 'Suspecté', 'Aucun'], (d) => {
+                      state.data.diagnostic = d; addUserMessage(d);
+                      if (d === 'Oui' || d === 'En cours') {
                         setTimeout(() => {
-                          addBotMessage(`Vous pouvez préciser — quel(s) type(s) de besoin ? (sélection multiple possible)`);
-                          showChoices(CHOICES.typesBesoin, (tb) => {
+                          addBotMessage(`Précisez les besoins :`);
+                          showChoices(['TDAH', 'TSA', 'Dys', 'Anxiété'], (tb) => {
                             state.data.typesBesoin = Array.isArray(tb) ? tb : [tb];
                             addUserMessage(state.data.typesBesoin.join(', '));
                             advanceTo('moments_difficiles');
                           }, true);
                         }, 400);
-                      } else {
-                        advanceTo('moments_difficiles');
-                      }
+                      } else { advanceTo('moments_difficiles'); }
                     });
                   }, 400);
                 });
@@ -1416,452 +337,179 @@ function processInput(text) {
       }, 400);
       break;
 
-    case 'moments_difficiles':
-      state.data.obs.transitions = text;
-      advanceTo('moments_positifs');
-      break;
-    case 'moments_positifs':
-      state.data.obs.bienetre = (state.data.obs.bienetre + ' ' + text).trim();
-      advanceTo('forces');
-      break;
-    case 'forces':
-      state.data.obs.forces = text;
-      advanceTo('appuisExistants');
-      break;
-    case 'appuisExistants':
-      state.data.obs.appuisExistants = text;
-      advanceTo('participation');
-      break;
-    case 'participation':
-      state.data.obs.participation = text;
-      advanceTo('consignes');
-      break;
-    case 'consignes':
-      state.data.obs.consignes = text;
-      advanceTo('autonomie');
-      break;
-    case 'autonomie':
-      state.data.obs.autonomie = text;
-      advanceTo('social');
-      break;
-    case 'social':
-      state.data.obs.social = text;
-      advanceTo('bienetre');
-      break;
-    case 'bienetre':
-      state.data.obs.bienetre = text;
-      advanceTo('langue');
-      break;
-    case 'langue':
-      state.data.obs.langue = text;
-      advanceTo('complement');
-      break;
-    case 'complement':
-      state.data.obs.complement = text;
-      advanceTo('final');
-      break;
-    case 'post_analysis':
-      handlePostAnalysis(text);
-      break;
+    case 'moments_difficiles': state.data.obs.transitions = text; advanceTo('moments_positifs'); break;
+    case 'moments_positifs': state.data.obs.bienetre = text; advanceTo('forces'); break;
+    case 'forces': state.data.obs.forces = text; advanceTo('appuisExistants'); break;
+    case 'appuisExistants': state.data.obs.appuisExistants = text; advanceTo('participation'); break;
+    case 'participation': state.data.obs.participation = text; advanceTo('consignes'); break;
+    case 'consignes': state.data.obs.consignes = text; advanceTo('autonomie'); break;
+    case 'autonomie': state.data.obs.autonomie = text; advanceTo('social'); break;
+    case 'social': state.data.obs.social = text; advanceTo('bienetre'); break;
+    case 'bienetre': state.data.obs.bienetre = text; advanceTo('langue'); break;
+    case 'langue': state.data.obs.langue = text; advanceTo('complement'); break;
+    case 'complement': state.data.obs.complement = text; advanceTo('final'); break;
   }
 }
 
 function advanceTo(next) {
   const stepsMap = { moments_difficiles:3, moments_positifs:4, forces:5, appuisExistants:5, participation:6, consignes:6, autonomie:7, social:7, bienetre:7, langue:8, complement:8, final:8 };
+  
+  // SKIP LOGIC
+  if (next === 'consignes' && state.data.skipConsignes) { advanceTo('autonomie'); return; }
+  if (next === 'autonomie' && state.data.skipAutonomie) { advanceTo('social'); return; }
+  if (next === 'social' && state.data.skipSocial) { advanceTo('bienetre'); return; }
+  if (next === 'bienetre' && state.data.skipBienetre) { advanceTo('langue'); return; }
+
   state.step = next;
-  updateProgress(stepsMap[next] || state.stepNum);
+  updateProgress(stepsMap[next] || 8);
 
   if (next === 'final') {
     setTimeout(() => {
-      addBotMessage("Merci pour tout ça. Je prépare l'analyse…");
-      setTimeout(() => {
-        const data = buildAnalysis();
-        renderAnalysis(data);
-      }, 800);
+      addBotMessage("Analyse finale en cours...");
+      setTimeout(() => renderAnalysis(buildAnalysis()), 800);
     }, 400);
     return;
   }
 
   const p = state.data.pseudo;
-  const q = QUESTIONS[next] ? QUESTIONS[next](p) : null;
-  if (q) setTimeout(() => addBotMessage(q), 400);
+  const qMap = {
+    moments_difficiles: `Quand les difficultés sont-elles les plus fortes pour ${p} ?`,
+    moments_positifs: `Et quand est-ce que ça se passe mieux ?`,
+    forces: `Quelles sont ses ressources ou points forts ?`,
+    appuisExistants: `Qu'est-ce qui l'aide déjà ?`,
+    participation: `Comment est sa participation collective ?`,
+    consignes: `Comment réagit-il aux consignes ?`,
+    autonomie: `Peut-il démarrer seul ses exercices ?`,
+    social: `Comment sont ses relations avec les pairs ?`,
+    bienetre: `Comment le sentez-vous globalement (stressé, motivé) ?`,
+    langue: `La langue d'enseignement est-elle sa langue maternelle ?`,
+    complement: `Un dernier point à ajouter ?`
+  };
+  
+  if (qMap[next]) setTimeout(() => addBotMessage(qMap[next]), 400);
 }
 
-function handlePostAnalysis(text) {
-  const low = text.toLowerCase();
-  if (/non|rien|parfait|bien|ok|correct|merci|c'est bon/i.test(low)) {
-    addBotMessage(`Tant mieux. N'hésitez pas à revenir si la situation évolue — je suis là.`);
-  } else {
-    // Update complement and regenerate
-    state.data.obs.complement = (state.data.obs.complement + ' | ' + text).trim();
-    addBotMessage(`Je prends note. Je mets à jour l'analyse avec cette précision.`);
-    setTimeout(() => {
-      const data = buildAnalysis();
-      const oldFiches = document.querySelectorAll('.fiche-wrapper, .indices-grid, .alert-box');
-      oldFiches.forEach(el => el.remove());
-      renderAnalysis(data);
-    }, 600);
-  }
+function detectSignaux(obs) {
+  const texte = Object.values(obs).join(' ').toLowerCase();
+  const hyps = []; const dims = new Set();
+  Object.values(SIGNAUX_OBSERVATION).forEach(s => {
+    if (s.patterns.some(p => texte.includes(p))) {
+      s.dimensions.forEach(d => dims.add(d));
+      s.hypotheses.forEach(h => { if (hyps.length < 5) hyps.push(h); });
+    }
+  });
+  return { hyps, dims: [...dims] };
 }
 
-// ============================================================
-// CHOICES UI
-// ============================================================
-function showChoices(options, callback, multi = false) {
-  const container = document.getElementById('chatContainer');
-  const wrap = document.createElement('div');
-  wrap.className = 'choices-wrap';
-  wrap.id = 'currentChoices';
-
-  if (!multi) {
-    // Sélection simple — un clic ferme
-    options.forEach(opt => {
-      const btn = document.createElement('button');
-      btn.className = 'choice-btn';
-      btn.textContent = opt;
-      btn.onclick = () => {
-        document.getElementById('currentChoices')?.remove();
-        callback(opt);
-      };
-      wrap.appendChild(btn);
-    });
-  } else {
-    // Multi-sélection réelle
-    const selected = new Set();
-    const hint = document.createElement('div');
-    hint.style.cssText = 'width:100%;font-size:11px;color:var(--muted);margin-bottom:6px;font-style:italic;';
-    hint.textContent = 'Sélectionnez un ou plusieurs éléments, puis confirmez.';
-    wrap.appendChild(hint);
-
-    options.forEach(opt => {
-      const btn = document.createElement('button');
-      btn.className = 'choice-btn';
-      btn.textContent = opt;
-      btn.dataset.val = opt;
-      btn.onclick = () => {
-        if (opt === 'Je préfère ne pas préciser') {
-          // Option exclusive
-          document.getElementById('currentChoices')?.remove();
-          callback([opt]);
-          return;
-        }
-        if (selected.has(opt)) {
-          selected.delete(opt);
-          btn.classList.remove('selected');
-        } else {
-          selected.add(opt);
-          btn.classList.add('selected');
-        }
-        confirmBtn.disabled = selected.size === 0;
-      };
-      wrap.appendChild(btn);
-    });
-
-    const confirmBtn = document.createElement('button');
-    confirmBtn.style.cssText = 'margin-top:10px;width:100%;padding:10px 16px;background:var(--navy);color:var(--cream);border:none;border-radius:10px;font-family:"DM Sans",sans-serif;font-size:13px;font-weight:600;cursor:pointer;opacity:0.4;transition:opacity .2s;';
-    confirmBtn.textContent = 'Confirmer la sélection →';
-    confirmBtn.disabled = true;
-    confirmBtn.onclick = () => {
-      if (selected.size === 0) return;
-      document.getElementById('currentChoices')?.remove();
-      callback([...selected]);
-    };
-    wrap.appendChild(confirmBtn);
-    // Enable styling when active
-    const orig = confirmBtn.onclick;
-    confirmBtn.addEventListener('mouseenter', () => { if (!confirmBtn.disabled) confirmBtn.style.opacity = '1'; });
-    confirmBtn.addEventListener('mouseleave', () => { if (!confirmBtn.disabled) confirmBtn.style.opacity = '0.9'; });
-    // Watch disabled state for opacity
-    const observer = new MutationObserver(() => {
-      confirmBtn.style.opacity = confirmBtn.disabled ? '0.4' : '0.95';
-      confirmBtn.style.cursor = confirmBtn.disabled ? 'not-allowed' : 'pointer';
-    });
-    observer.observe(confirmBtn, { attributes: true });
+function buildAnalysis() {
+  const d = state.data; const sigs = detectSignaux(d.obs);
+  const hypotheses = [...sigs.hyps];
+  
+  // INFERENCE SANS DIAGNOSTIC
+  if (!d.diagnostic || d.diagnostic === 'Aucun') {
+    if (sigs.dims.includes('attention')) hypotheses.push("Le profil suggère une sensibilité accrue à la surcharge cognitive immédiate.");
+    if (sigs.dims.includes('emotionnel')) hypotheses.push("Le besoin de sécurisation affective semble être un prérequis à l'engagement tâche.");
   }
 
-  container.appendChild(wrap);
-  scrollToBottom();
+  // PISTES
+  const troubleIds = [];
+  Object.values(TROUBLES_DB).forEach(t => { if(d.typesBesoin.includes(t.label)) troubleIds.push(t.id); });
+  
+  const pistes = { consignes:[], supports:[], organisation:[], environnement:[] };
+  troubleIds.forEach(id => {
+    const am = TROUBLES_DB[id].amenagements;
+    Object.keys(pistes).forEach(k => pistes[k].push(...(am[k] || [])));
+  });
+  
+  if (troubleIds.length === 0) {
+    sigs.dims.forEach(dim => {
+      const am = GEN_PISTES[dim] || {};
+      Object.keys(pistes).forEach(k => pistes[k].push(...(am[k] || [])));
+    });
+  }
+
+  return { hypotheses, pistes };
 }
 
 // ============================================================
-// RENDER
+// UI CORE
 // ============================================================
-function addBotMessage(text, isWelcome = false) {
-  const container = document.getElementById('chatContainer');
-  const msg = document.createElement('div');
-  msg.className = 'msg bot' + (isWelcome ? ' welcome' : '');
-  msg.innerHTML = `<div class="msg-avatar">S</div><div class="msg-bubble">${formatText(text)}</div>`;
-  container.appendChild(msg);
-  scrollToBottom();
-}
+function startApp() { document.getElementById('landing').style.display = 'none'; document.getElementById('app').classList.add('active'); initState(); resetUI(); setTimeout(() => addBotMessage("Bonjour. Dites-moi ce qui vous amène aujourd'hui ?", true), 300); }
+function startDemo() { startApp(); runDemo(); }
+function goHome() { document.getElementById('app').classList.remove('active'); document.getElementById('landing').style.display = ''; }
+function resetApp() { initState(); resetUI(); setTimeout(() => addBotMessage("Bonjour. Dites-moi ce qui vous amène ?"), 300); }
+function resetUI() { document.getElementById('chatContainer').innerHTML = ''; updateProgress(0); }
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function sendMessage() { const i = document.getElementById('userInput'); const t = i.value.trim(); if (!t) return; i.value = ''; addUserMessage(t); processInput(t); }
+function addBotMessage(t, w = false) { const c = document.getElementById('chatContainer'); const m = document.createElement('div'); m.className = 'msg bot' + (w ? ' welcome' : ''); m.innerHTML = `<div class="msg-avatar">S</div><div class="msg-bubble">${formatText(t)}</div>`; c.appendChild(m); scrollToBottom(); }
+function addUserMessage(t) { const c = document.getElementById('chatContainer'); const m = document.createElement('div'); m.className = 'msg user'; m.innerHTML = `<div class="msg-avatar">👤</div><div class="msg-bubble">${escapeHtml(t)}</div>`; c.appendChild(m); scrollToBottom(); }
+function formatText(t) { return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); }
+function escapeHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+function updateProgress(s) { document.getElementById('progressFill').style.width = (s * 12.5) + '%'; document.getElementById('progressLabel').textContent = `Étape ${s} / 8`; }
+function scrollToBottom() { const c = document.getElementById('chatContainer'); setTimeout(() => c.scrollTop = c.scrollHeight, 100); }
+function autoResize(e) { e.style.height = 'auto'; e.style.height = Math.min(e.scrollHeight, 120) + 'px'; }
 
-function addUserMessage(text) {
-  const container = document.getElementById('chatContainer');
-  const msg = document.createElement('div');
-  msg.className = 'msg user';
-  msg.innerHTML = `<div class="msg-avatar">👤</div><div class="msg-bubble">${escapeHtml(text)}</div>`;
-  container.appendChild(msg);
-  scrollToBottom();
-}
-
-function formatText(t) {
-  return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');
-}
-
-function escapeHtml(t) {
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+function showChoices(opts, cb, multi = false) {
+  const c = document.getElementById('chatContainer'); const w = document.createElement('div'); w.className = 'choices-wrap'; w.id = 'currentChoices';
+  if (!multi) opts.forEach(o => { const b = document.createElement('button'); b.className = 'choice-btn'; b.textContent = o; b.onclick = () => { document.getElementById('currentChoices')?.remove(); cb(o); }; w.appendChild(b); });
+  else {
+    const s = new Set();
+    opts.forEach(o => {
+      const b = document.createElement('button'); b.className = 'choice-btn'; b.textContent = o;
+      b.onclick = () => { if (s.has(o)) { s.delete(o); b.style.borderColor = 'var(--border)'; } else { s.add(o); b.style.borderColor = 'var(--sage)'; } cf.disabled = s.size === 0; };
+      w.appendChild(b);
+    });
+    const cf = document.createElement('button'); cf.className = 'choice-btn'; cf.textContent = 'Confirmer'; cf.disabled = true; cf.style.background = 'var(--navy)'; cf.style.color = 'white';
+    cf.onclick = () => { document.getElementById('currentChoices')?.remove(); cb([...s]); };
+    w.appendChild(cf);
+  }
+  c.appendChild(w); scrollToBottom();
 }
 
 function renderAnalysis(data) {
-  const container = document.getElementById('chatContainer');
-  addBotMessage("✅ Voici l'analyse. Elle croise vos observations, les appuis identifiés et quelques hypothèses pédagogiques — à lire comme des pistes de réflexion, pas des conclusions.");
-
-  // Indices
-  const indicesDiv = document.createElement('div');
-  indicesDiv.className = 'indices-grid';
-  const indMap = [
-    {key:'inclusion_pedagogique',label:'Inclusion pédagogique',icon:'📚'},
-    {key:'participation_sociale',label:'Participation sociale',icon:'🤝'},
-    {key:'autonomie',label:'Autonomie',icon:'⚡'},
-    {key:'bien_etre',label:'Bien-être scolaire',icon:'💚'},
-    {key:'accessibilite_linguistique',label:'Accessibilité ling.',icon:'🗣️'},
-  ];
-  const statusLabel = {favorable:'● Favorable',surveiller:'● À surveiller',preoccupant:'● Préoccupant'};
-  indMap.forEach(ind => {
-    const idx = data.indices[ind.key];
-    if (!idx) return;
-    const cl = idx.statut === 'favorable' ? 'green' : idx.statut === 'surveiller' ? 'yellow' : 'red';
-    const card = document.createElement('div');
-    card.className = 'index-card';
-    card.innerHTML = `<div class="index-label">${ind.icon} ${ind.label}</div>
-      <div class="index-value ${cl}">${idx.score}%</div>
-      <div class="index-status ${cl}">${statusLabel[idx.statut]||idx.statut}</div>
-      <div class="index-desc">${idx.explication}</div>`;
-    indicesDiv.appendChild(card);
-  });
-  container.appendChild(indicesDiv);
-
-  // Signaux
-  if (data.signaux_alerte && data.signaux_alerte.length > 0) {
-    setTimeout(() => {
-      const alertDiv = document.createElement('div');
-      alertDiv.className = 'alert-box';
-      alertDiv.innerHTML = `<div class="alert-title">⚠️ Signaux d'alerte identifiés</div>${data.signaux_alerte.map(s=>`• ${s}`).join('<br>')}<br><br><small>Ces signaux suggèrent d'envisager un échange avec les parents, l'équipe pédagogique ou le CPMS/PMS.</small>`;
-      container.appendChild(alertDiv);
-      scrollToBottom();
-    }, 300);
-  }
-
-  // Fiche
-  setTimeout(() => {
-    ficheContent = buildFicheText(data);
-    const fw = document.createElement('div');
-    fw.className = 'fiche-wrapper';
-    fw.innerHTML = `<div class="fiche">
-      <div class="fiche-header"><h2>Fiche d'analyse pédagogique</h2><p>Générée le ${new Date().toLocaleDateString('fr-BE',{day:'numeric',month:'long',year:'numeric'})} — Outil SOA</p></div>
-      <div class="fiche-body">${buildFicheSections(data)}</div>
-      <div class="fiche-actions">
-        <button class="btn-action primary" onclick="window.print()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
-          Imprimer / PDF
-        </button>
-        <button class="btn-action" onclick="copyFiche(this)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-          Copier le texte
-        </button>
-        <button class="btn-action" onclick="resetApp()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-          Nouvelle analyse
-        </button>
-      </div>
-    </div>`;
-    container.appendChild(fw);
-    scrollToBottom();
-
-    // Post-analysis follow-up
-    setTimeout(() => {
-      state.step = 'post_analysis';
-      addBotMessage(`Est-ce que cette analyse vous semble juste dans l'ensemble ? Si quelque chose ne correspond pas — une information inexacte, un aspect mal cerné — vous pouvez me le dire.`);
-      scrollToBottom();
-    }, 1200);
-  }, 600);
-}
-
-function buildFicheSections(data) {
-  let html = '';
-  if (data.asavoir?.length) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(122,158,126,.15);color:var(--sage-dark)">✓</span> Ce qui soutient</div><div class="fiche-content"><ul>${data.asavoir.map(p=>`<li>${p}</li>`).join('')}</ul></div></div>`;
-  if (data.hypotheses?.length) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(30,45,64,.08);color:var(--navy)">?</span> Hypothèses pédagogiques</div><div class="fiche-content"><ul>${data.hypotheses.map(h=>`<li>${h}</li>`).join('')}</ul></div></div>`;
-  if (data.vigilance?.length) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(212,151,74,.15);color:var(--amber)">!</span> Points de vigilance</div><div class="fiche-content"><ul>${data.vigilance.map(p=>`<li>${p}</li>`).join('')}</ul></div></div>`;
-  if (data.pistes) {
-    const cats = {consignes:'📝 Consignes',supports:'🖼️ Supports visuels',organisation:'📋 Organisation',amenagements:'🔧 Aménagements',environnement:'🏫 Environnement'};
-    let pistesHtml = '';
-    Object.entries(cats).forEach(([k,label]) => {
-      if (data.pistes[k]?.length) pistesHtml += `<strong>${label} :</strong><ul>${data.pistes[k].map(p=>`<li>${p}</li>`).join('')}</ul>`;
-    });
-    if (pistesHtml) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(30,45,64,.08);color:var(--navy)">→</span> Ajustements à tester</div><div class="fiche-content">${pistesHtml}</div></div>`;
-  }
-  if (data.bien_etre_detail) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(122,158,126,.1);color:var(--sage-dark)">💚</span> Bien-être</div><div class="fiche-content">${data.bien_etre_detail}</div></div>`;
-  if (data.linguistique_detail) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(212,151,74,.1);color:var(--amber)">🗣️</span> Dimension linguistique</div><div class="fiche-content">${data.linguistique_detail}</div></div>`;
-  if (data.signaux_alerte?.length) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(196,120,120,.1);color:var(--rose)">⚠️</span> Signaux d'alerte</div><div class="fiche-content"><ul>${data.signaux_alerte.map(s=>`<li>${s}</li>`).join('')}</ul></div></div>`;
-  if (data.conclusion) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(30,45,64,.08);color:var(--navy)">★</span> Conclusion</div><div class="fiche-content" style="font-style:italic;color:var(--navy)">${data.conclusion}</div></div>`;
-  html += `<div style="font-size:11px;color:var(--muted);padding-top:8px;border-top:1px solid var(--border);margin-top:8px;">⚠️ Outil de réflexion pédagogique — Ne constitue pas une évaluation clinique.</div>`;
-  return html;
-}
-
-function buildFicheText(data) {
-  let t = "FICHE D'ANALYSE PÉDAGOGIQUE — SOA\n";
-  t += `Date : ${new Date().toLocaleDateString('fr-BE')}\n\n`;
-  t += '--- INDICES ---\n';
-  Object.entries(data.indices).forEach(([k,v]) => { t += `${k} : ${v.score}% (${v.statut})\n`; });
-  t += '\n--- À SAVOIR ---\n'; (data.asavoir||[]).forEach(p => t += `• ${p}\n`);
-  t += '\n--- VIGILANCE ---\n'; (data.vigilance||[]).forEach(p => t += `• ${p}\n`);
-  t += '\n--- PISTES ---\n';
-  if (data.pistes) Object.entries(data.pistes).forEach(([k,arr]) => { if(arr?.length){t+=`${k}:\n`;arr.forEach(p=>t+=`  - ${p}\n`);} });
-  if (data.signaux_alerte?.length) { t += '\n--- SIGNAUX ---\n'; data.signaux_alerte.forEach(s=>t+=`• ${s}\n`); }
-  if (data.conclusion) t += `\n--- CONCLUSION ---\n${data.conclusion}\n`;
-  return t;
-}
-
-function copyFiche(btn) {
-  navigator.clipboard.writeText(ficheContent).then(() => {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '✅ Copié !';
-    setTimeout(() => btn.innerHTML = orig, 2000);
-  });
+  const c = document.getElementById('chatContainer'); addBotMessage("Analyse terminée. Voici la fiche récapitulative :");
+  const fw = document.createElement('div'); fw.className = 'fiche-wrapper';
+  fw.innerHTML = `<div class="fiche"><div class="fiche-header"><h2>Fiche SOA</h2></div><div class="fiche-body">
+    <div class="fiche-section"><div class="fiche-section-title">Hypothèses</div><ul>${data.hypotheses.map(h=>`<li>${h}</li>`).join('')}</ul></div>
+    <div class="fiche-section"><div class="fiche-section-title">Ajustements suggérés</div>
+      ${Object.entries(data.pistes).map(([k,v])=>v.length?`<strong>${k}</strong>:<ul>${v.slice(0,4).map(p=>`<li>${p}</li>`).join('')}</ul>`:'').join('')}
+    </div>
+    <div class="fiche-section"><div class="fiche-section-title">Conseil Famille</div><p>Échangez avec les parents sur les points forts de l'élève avant d'aborder les pistes d'ajustements.</p></div>
+  </div></div>`;
+  c.appendChild(fw); scrollToBottom();
 }
 
 // ============================================================
 // DEMO
 // ============================================================
 async function runDemo() {
-  updateProgress(8);
-
-  // Message d'ouverture de SOA — avant même que l'enseignant parle
-  addBotMessage(`Bonjour. Je suis SOA — Soutien à l'Observation et aux Aménagements.
-
-Je suis là pour vous aider à réfléchir à la situation d'un élève qui vous préoccupe. Ensemble, on va essayer de mieux comprendre ce qui se passe pour lui, et d'identifier des pistes concrètes que vous pourrez tester en classe.
-
-Quelques choses importantes avant de commencer :
-Je ne pose pas de diagnostic — je suis un outil de réflexion pédagogique, pas un professionnel de santé.
-Je ne remplace pas votre équipe, votre centre PMS ou un spécialiste.
-Je ne garde aucune donnée — tout ce que vous partagez reste dans votre navigateur, le temps de notre échange.
-Merci d'utiliser un prénom fictif pour l'élève dont vous allez me parler.
-
-Quand vous êtes prêt·e, dites-moi ce qui vous amène.`, true);
-  await delay(600);
-
-  // Conversation démo — reflète le nouveau flux S-O-A en 4 temps
-  const exchanges = [
-    {
-      user: "Bonjour, j'enseigne en 3e primaire et j'ai un élève qui me préoccupe depuis la rentrée. Il décroche souvent, il reste en retrait dans les travaux de groupe, et il se met parfois en colère quand une activité change sans prévenir.",
-      bot: "Merci de me partager ça. Décrire une situation, c'est déjà un premier pas utile. Quel prénom fictif voulez-vous utiliser pour cet élève ?"
-    },
-    {
-      user: "Je vais l'appeler Léo.",
-      bot: "Bien. Qu'est-ce que vous aimeriez obtenir à l'issue de notre échange — mieux comprendre ce qui se passe pour lui, trouver des aménagements concrets, préparer une concertation ?"
-    },
-    {
-      user: "Surtout trouver des aménagements que je peux mettre en place maintenant, sans attendre.",
-      bot: "C'est clair. Léo a quel âge, et est-ce qu'un diagnostic ou une évaluation a déjà été fait pour lui ?"
-    },
-    {
-      user: "Il a 9 ans. Un TDAH a été posé il y a 6 mois, mais il n'y a pas encore d'accompagnement formalisé en classe.",
-      bot: "Je comprends — six mois sans cadre formalisé, ça laisse l'enseignant gérer seul. Dans quels moments de la journée les difficultés de Léo se voient-elles le plus ? Est-ce qu'il y a des déclencheurs que vous avez identifiés ?"
-    },
-    {
-      user: "Surtout lors des transitions entre activités — il met du temps à démarrer et s'énerve si le changement est trop abrupt. Et les longues tâches écrites l'après-midi, il s'effondre.",
-      bot: "C'est utile. Et à l'inverse — quand est-ce que ça se passe mieux pour lui ? Y a-t-il des contextes où il semble plus là, plus engagé ?"
-    },
-    {
-      user: "Il est vraiment motivé quand on fait des sciences ou des activités manuelles. Et quand je lui montre un exemple concret avant de démarrer, il comprend beaucoup mieux.",
-      bot: "C'est précieux — les sciences et les activités manuelles comme points d'ancrage, l'exemple concret comme déclic. Et justement, chez Léo, qu'est-ce qui fonctionne bien — ou mieux que le reste ? Qu'est-ce qui vous montre qu'il a des ressources ?"
-    },
-    {
-      user: "Il a une vraie curiosité intellectuelle. Quand quelque chose l'intéresse vraiment, il est capable d'une concentration remarquable. Et il est attachant, les adultes l'apprécient.",
-      bot: "C'est important d'avoir ça en tête — cette capacité de concentration intense sur ce qui l'intéresse, c'est une vraie ressource. Est-ce que quelque chose aide déjà, même un peu, dans votre classe ?"
-    },
-    {
-      user: "Oui — quand je lui donne une consigne courte avec un exemple, et que je vérifie qu'il a compris avant de le laisser démarrer, ça se passe beaucoup mieux. Et son enseignante de l'an passé utilisait des rituels et des repères visuels fixes.",
-      bot: "C'est exactement le type d'information utile. Ces ajustements fonctionnent déjà — on peut s'en inspirer. Est-ce qu'il participe spontanément en classe, ou plutôt il attend qu'on l'interpelle ?"
-    },
-    {
-      user: "Il ne lève jamais la main, mais quand je l'interpelle directement, il sait souvent répondre. Il est beaucoup dans la lune.",
-      bot: "Ça m'évoque quelque chose d'important : il suit davantage qu'il n'y paraît, mais s'auto-activer lui coûte beaucoup. Et côté relations avec les autres ?"
-    },
-    {
-      user: "Il a 2-3 copains avec qui ça se passe bien. Mais il évite les grands groupes. Il semble souvent fatigué, stressé, sauf dans ses moments de motivation.",
-      bot: "Ces liens existent — c'est un vrai appui. La langue d'enseignement, ce n'est pas un obstacle pour lui ?"
-    },
-    {
-      user: "Non, il est francophone natif.",
-      bot: "Bien. Avant que je prépare l'analyse — est-ce qu'il y a quelque chose d'important sur Léo que vous n'avez pas encore pu dire ?"
-    },
-    {
-      user: "Oui, une chose : son enseignante de l'an passé m'a dit qu'il était beaucoup plus apaisé dans sa classe. Elle utilisait beaucoup de rituels et de repères visuels fixes.",
-      bot: "C'est une information précieuse et concrète — si ça a fonctionné, c'est un vrai point de départ. Je prends ça en compte. Je prépare l'analyse."
-    },
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+  const steps = [
+    { type: 'user', text: "Léo est souvent seul, il ne démarre jamais ses exercices sans mon aide." },
+    { type: 'bot', text: "Pour préserver l'anonymat, quel prénom fictif donnerons-nous ?" },
+    { type: 'user', text: "Léo." },
+    { type: 'bot', text: "Quel est l'objectif prioritaire ?" },
+    { type: 'user', text: "Aménagements concrets." },
+    { type: 'bot', text: "Niveau scolaire ?" },
+    { type: 'user', text: "Primaire." },
+    { type: 'bot', text: "Âge ?" },
+    { type: 'user', text: "7-9 ans." },
+    { type: 'bot', text: "Diagnostic ?" },
+    { type: 'user', text: "Aucun." },
+    { type: 'bot', text: "Quand les difficultés sont-elles les plus fortes ?" },
+    { type: 'user', text: "Lors des transitions et le matin au démarrage." },
+    { type: 'bot', text: "Et les points forts ?" },
+    { type: 'user', text: "Il est très créatif et adore les sciences." },
+    { type: 'bot', text: "Comment l'aider davantage ?" }
   ];
 
-  for (const ex of exchanges) {
-    addUserMessage(ex.user);
-    await delay(280);
-    addBotMessage(ex.bot);
-    await delay(220);
+  for(let s of steps) {
+    if(s.type === 'user') { addUserMessage(s.text); }
+    else { addBotMessage(s.text); }
+    await delay(600);
   }
-
-  await delay(500);
-  addBotMessage("Je croise les observations, les signaux identifiés et le profil TDAH pour construire l'analyse…");
-  await delay(800);
-
-  // État injecté — riche en langage naturel pour activer SIGNAUX_OBSERVATION
-  state.data = {
-    pseudo: 'Léo',
-    niveau: '3e-4e primaire',
-    age: '9 ans',
-    diagnostic: 'Oui, un diagnostic est posé',
-    typesBesoin: ['TDAH'],
-    demande: 'Trouver des aménagements concrets',
-    obs: {
-      histoire: "décroche souvent, reste en retrait lors des travaux de groupe, se met en colère quand une tâche change sans prévenir",
-      participation: "ne lève jamais la main spontanément, beaucoup dans la lune, sait répondre quand interpellé directement",
-      consignes: "consignes longues le perdent, comprend mieux quand on montre un exemple concret, support visuel aide",
-      autonomie: "besoin d'être relancé, ne démarre pas seul, a besoin qu'on soit là pour commencer",
-      social: "2-3 copains avec qui il s'entend bien, évite les grands groupes",
-      transitions: "supporte mal les changements, se dérègle lors des transitions, s'énerve si le changement est trop abrupt",
-      bienetre: "souvent fatigué l'après-midi, s'effondre sur les longues tâches, stressé et tendu, motivé pour les sciences et les activités manuelles",
-      langue: "francophone natif, pas de barrière linguistique",
-      forces: "curiosité intellectuelle réelle, concentration remarquable quand il est intéressé, attachant, les adultes l'apprécient, motivé pour les sciences et les activités manuelles",
-      appuisExistants: "consigne courte avec exemple et vérification de compréhension fonctionne bien, enseignante précédente utilisait des rituels et repères visuels fixes avec succès",
-      complement: "si on anticipe les transitions et qu'on structure les étapes, Léo peut vraiment s'engager"
-    },
-    scores: {}
-  };
-
-  const data = buildAnalysis();
-  renderAnalysis(data);
-}
-
-function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-// ============================================================
-// UI UTILS
-// ============================================================
-function updateProgress(step) {
-  const fill = document.getElementById('progressFill');
-  const label = document.getElementById('progressLabel');
-  const pct = Math.round((step / 8) * 100);
-  fill.style.width = pct + '%';
-  label.textContent = `Étape ${Math.min(step, 8)} / 8`;
-}
-
-function scrollToBottom() {
-  const c = document.getElementById('chatContainer');
-  setTimeout(() => c.scrollTop = c.scrollHeight, 100);
-}
-
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  // Finir la démo
+  renderAnalysis(buildAnalysis());
 }
 </script>
 </body>
