@@ -40,4 +40,262 @@
   
   .hero-btns { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
   .btn-primary { display:inline-flex; align-items:center; gap:12px; background:var(--navy); color:var(--cream); border:none; padding:20px 40px; border-radius:14px; font-family:'DM Sans',sans-serif; font-size:17px; font-weight:600; cursor:pointer; transition:all .2s; letter-spacing:.01em; }
-  .btn-primary:hover { background:var(--navy-mid); transform:translateY(-2px); box-shadow
+  .btn-primary:hover { background:var(--navy-mid); transform:translateY(-2px); box-shadow:var(--shadow-lg); }
+  .btn-demo { display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--slate); border:1.5px solid var(--border); padding:15px 24px; border-radius:12px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; cursor:pointer; transition:all .2s; }
+
+  .hero-cards { display:flex; flex-direction:column; gap:12px; flex-shrink:0; width:320px; }
+  .info-card { background:rgba(255,255,255,.8); backdrop-filter:blur(12px); border:1px solid var(--border); border-radius:16px; padding:20px 24px; display:flex; align-items:flex-start; gap:16px; box-shadow:var(--shadow); opacity:0; animation:floatIn .4s ease forwards; }
+  .info-card:nth-child(1){animation-delay:.1s} .info-card:nth-child(2){animation-delay:.2s} .info-card:nth-child(3){animation-delay:.3s} .info-card:nth-child(4){animation-delay:.4s}
+  @keyframes floatIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+  .card-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .card-icon.green{background:rgba(122,158,126,.15)} .card-icon.orange{background:rgba(196,112,74,.12)} .card-icon.blue{background:rgba(30,45,64,.08)} .card-icon.amber{background:rgba(212,151,74,.12)}
+  .card-title { font-size:13px; font-weight:600; color:var(--navy); margin-bottom:4px; }
+  .card-desc { font-size:12px; color:var(--muted); line-height:1.5; }
+
+  /* MÉTHODE SOA VISUELLE STRICTE */
+  .soa-method { position:relative; z-index:10; padding:0 48px 28px; display:flex; justify-content:center; gap:8px; flex-wrap:wrap; }
+  .soa-step { background:rgba(255,255,255,.55); backdrop-filter:blur(12px); border:1px solid var(--border); border-radius:12px; padding:12px 16px; flex:1; min-width:160px; max-width:220px; box-shadow:0 2px 8px rgba(30,45,64,.05); position:relative; overflow:hidden; }
+  .soa-step-letter { font-family:'Fraunces',serif; font-size:36px; font-weight:700; line-height:1; opacity:.1; position:absolute; top:8px; right:12px; }
+  .soa-step-tag { display:inline-flex; align-items:center; gap:5px; font-family:'Fraunces',serif; font-size:11px; font-weight:500; font-style:italic; margin-bottom:5px; }
+  .soa-step.step-s .soa-step-tag{color:var(--terracotta)}
+  .soa-step.step-o .soa-step-tag{color:var(--sage-dark)}
+  .soa-step.step-a .soa-step-tag{color:var(--amber)}
+  .soa-step-title { font-size:12px; font-weight:600; color:var(--navy); margin-bottom:4px; }
+  .soa-step-desc { font-size:11px; color:var(--muted); line-height:1.5; }
+  .soa-connector { display:flex; align-items:center; color:var(--muted); font-size:14px; padding-top:8px; flex-shrink:0; opacity:.5; }
+
+  /* FOOTER STRICT */
+  .landing-footer { position:relative; z-index:10; padding:20px 48px 32px; text-align:center; }
+  .landing-footer-item { display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,.72); border:1px solid var(--border); border-radius:100px; padding:7px 16px; font-size:12px; font-weight:500; color:var(--slate); margin:4px; backdrop-filter:blur(8px); box-shadow:0 2px 8px rgba(30,45,64,.06); }
+  .footer-dot { width:7px; height:7px; border-radius:50%; }
+  .dot-green{background:var(--sage)} .dot-amber{background:var(--amber)} .dot-navy{background:var(--navy)}
+
+  /* INTERFACE APPLICATION */
+  #app { display:none; height:100vh; flex-direction:column; background:var(--warm-white); }
+  #app.active { display:flex; }
+  .app-header { background:var(--warm-white); border-bottom:1px solid var(--border); padding:0 32px; height:64px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; position:sticky; top:0; z-index:100; }
+  .progress-bar { width:180px; height:4px; background:var(--border); border-radius:100px; overflow:hidden; }
+  .progress-fill { height:100%; background:linear-gradient(90deg,var(--sage),var(--sage-dark)); transition:width .5s ease; width:0%; }
+  .chat-container { flex:1; overflow-y:auto; padding:32px; display:flex; flex-direction:column; gap:20px; }
+  .msg { display:flex; gap:12px; max-width:720px; animation:msgIn .3s ease forwards; }
+  .msg.user { align-self:flex-end; flex-direction:row-reverse; }
+  .msg-avatar { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0; }
+  .msg.bot .msg-avatar { background:var(--navy); color:var(--cream); }
+  .msg.user .msg-avatar { background:rgba(122,158,126,.2); color:var(--sage-dark); }
+  .msg-bubble { padding:14px 18px; border-radius:16px; font-size:14px; line-height:1.65; background:white; border:1px solid var(--border); box-shadow:var(--shadow); }
+  .msg.user .msg-bubble { background:var(--navy); color:var(--cream); border:none; }
+  .input-area { padding:20px 32px; border-top:1px solid var(--border); background:var(--warm-white); }
+  .input-wrapper { display:flex; gap:12px; background:white; border:1.5px solid var(--border); border-radius:14px; padding:12px 16px; box-shadow:var(--shadow); }
+  #userInput { flex:1; border:none; outline:none; resize:none; font-family:inherit; font-size:14px; }
+  .send-btn { width:36px; height:36px; background:var(--navy); border:none; border-radius:9px; color:white; cursor:pointer; font-size:18px; }
+  .send-btn:disabled { background:var(--border); cursor:not-allowed; }
+
+  /* FICHE RENDU */
+  .fiche-wrapper { max-width:700px; margin-left:48px; }
+  .fiche { background:white; border:1px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:var(--shadow-lg); }
+  .fiche-header { background:var(--navy); padding:24px; color:white; }
+  .fiche-body { padding:24px; }
+  .fiche-section { margin-bottom:18px; padding-bottom:18px; border-bottom:1px solid var(--border); }
+  .fiche-section-title { font-size:11px; font-weight:700; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+</style>
+</head>
+<body>
+
+<div id="landing">
+  <div class="landing-bg"></div>
+  <div class="landing-blob blob-1"></div>
+  <div class="landing-blob blob-2"></div>
+  <div class="landing-blob blob-3"></div>
+  <nav class="landing-nav">
+    <div class="logo-mark">S</div><span class="logo-text">SOA — Soutien à l'Observation et aux Aménagements</span>
+  </nav>
+  
+  <div class="landing-hero">
+    <div class="hero-content">
+      <div class="hero-badge"><div class="hero-badge-dot"></div>Bonjour, je suis SOA 👋</div>
+      <h1>Je suis là pour<br><em>vous écouter.</em></h1>
+      <p class="hero-desc">Parlez-moi d'un élève qui vous préoccupe. Je vous guiderai à travers quelques questions pour construire ensemble une analyse pédagogique structurée.</p>
+      <div class="hero-btns">
+        <button class="btn-primary" onclick="startApp()">Commencer une analyse</button>
+        <button class="btn-demo" onclick="startDemo()">Simulation multi-profils</button>
+      </div>
+    </div>
+    <div class="hero-cards">
+      <div class="info-card"><div class="card-icon green">🤝</div><div><div class="card-title">Je ne pose pas de diagnostic</div><div class="card-desc">Je suis un outil de réflexion pédagogique, pas un professionnel de santé.</div></div></div>
+      <div class="info-card"><div class="card-icon orange">🎓</div><div><div class="card-title">Je m'adresse à vous</div><div class="card-desc">Enseignants, éducateurs, équipes CPMS, coordinateurs pédagogiques.</div></div></div>
+      <div class="info-card"><div class="card-icon blue">🔒</div><div><div class="card-title">Je ne retiens rien</div><div class="card-desc">Pas de nom d'élève nécessaire. Utilisez un prénom fictif.</div></div></div>
+      <div class="info-card"><div class="card-icon amber">📋</div><div><div class="card-title">Je génère une fiche</div><div class="card-desc">Un document synthétique à la fin de notre échange.</div></div></div>
+    </div>
+  </div>
+
+  <div class="soa-method">
+    <div class="soa-step step-s"><div class="soa-step-letter">S</div><div class="soa-step-tag">Situation</div><div class="soa-step-title">Comprendre le contexte</div><div class="soa-step-desc">Analyse du niveau, de l'âge et de l'histoire scolaire.</div></div>
+    <div class="soa-connector">→</div>
+    <div class="soa-step step-o"><div class="soa-step-letter">O</div><div class="soa-step-tag">Observation</div><div class="soa-step-title">Analyser ensemble</div><div class="soa-step-desc">Exploration fine des dimensions pédagogiques et sociales.</div></div>
+    <div class="soa-connector">→</div>
+    <div class="soa-step step-a"><div class="soa-step-letter">A</div><div class="soa-step-tag">Ajustements</div><div class="soa-step-title">Passer à l'action</div><div class="soa-step-desc">Pistes concrètes et aménagements testables en classe.</div></div>
+  </div>
+
+  <div class="landing-footer">
+    <div class="landing-footer-item"><span class="footer-dot dot-navy"></span>SOA — Soutien à l'Observation et aux Aménagements</div>
+    <div class="landing-footer-item"><span class="footer-dot dot-amber"></span>Outil pédagogique uniquement</div>
+    <div class="landing-footer-item"><span class="footer-dot dot-green"></span>Pas de données nominatives</div>
+  </div>
+</div>
+
+<div id="app">
+  <header class="app-header">
+    <div class="header-left"><div class="header-logo-mark">S</div><span class="header-title">SOA</span></div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="progress-label" id="progressLabel">Étape 1 / 8</span>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+    <div class="header-right"><button class="btn-new" onclick="resetApp()">Nouvelle analyse</button></div>
+  </header>
+  <div class="chat-container" id="chatContainer"></div>
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea id="userInput" placeholder="Votre réponse…" rows="1" oninput="handleInput(this)" onkeydown="handleKey(event)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>➔</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// LOGIQUE DE FOND
+// ============================================================
+let state = {};
+
+function initState() {
+  state = {
+    step: 'context',
+    data: {
+      pseudo: 'l\'élève', niveau: '', age: '', diagnostic: '', typesBesoin: [],
+      obs: { histoire: '', participation: '', leviers: '', consignes: '', autonomie: '', social: '', bienetre: '', complement: '' }
+    },
+    relances: { social: false, autonomie: false, consignes: false, bienetre: false }
+  };
+}
+
+// UX: BOUTON RÉACTIF
+function handleInput(el) {
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = el.value.trim().length === 0;
+  el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px';
+}
+
+function processInput(text) {
+  const t = text.toLowerCase();
+  // LOGIQUE DE RELANCE (Correction UX et Pédagogique)
+  if (/seul|isolé|ami|copain/i.test(t)) state.relances.social = true;
+  if (/consigne|comprend pas|longue/i.test(t)) state.relances.consignes = true;
+  if (/démarre|bloqué|aide/i.test(t)) state.relances.autonomie = true;
+  if (/stress|pleure|peur/i.test(t)) state.relances.bienetre = true;
+
+  switch(state.step) {
+    case 'context': 
+      state.data.obs.histoire = text; state.step = 'pseudo'; updateProgress(1);
+      setTimeout(() => addBotMessage(`Pour préserver l'anonymat, quel prénom fictif donnerons-nous à l'élève ?`), 400); break;
+    case 'pseudo': 
+      state.data.pseudo = text.trim(); state.step = 'demande';
+      setTimeout(() => { addBotMessage(`Quel est votre objectif prioritaire aujourd'hui ?`);
+      showChoices(['Comprendre l\'élève', 'Aménagements concrets', 'Concertation'], (c) => {
+        state.data.demande = c; addUserMessage(c); state.step = 'niveau'; updateProgress(2);
+        setTimeout(() => { addBotMessage(`Dans quel niveau scolaire est ${state.data.pseudo} ?`);
+        showChoices(['Maternelle', 'Primaire', 'Secondaire'], (n) => {
+          state.data.niveau = n; addUserMessage(n); state.step = 'age';
+          setTimeout(() => { addBotMessage(`Âge ?`);
+          showChoices(['4-6 ans', '7-9 ans', '10-12 ans', '13-15 ans', '16+'], (a) => {
+            state.data.age = a; addUserMessage(a); state.step = 'diagnostic'; updateProgress(3);
+            setTimeout(() => { addBotMessage(`Y a-t-il un diagnostic pour ${state.data.pseudo} ?`);
+            showChoices(['Oui', 'En cours', 'Suspecté', 'Aucun'], (d) => { state.data.diagnostic = d; addUserMessage(d); advanceTo('participation'); });
+            }, 400); }); }, 400); }); }, 400); }); }, 400); break;
+    
+    case 'participation': state.data.obs.participation = text; advanceTo('leviers'); break;
+    case 'leviers': state.data.obs.leviers = text; advanceTo('consignes'); break;
+    case 'consignes': state.data.obs.consignes = text; advanceTo('autonomie'); break;
+    case 'autonomie': state.data.obs.autonomie = text; advanceTo('social'); break;
+    case 'social': state.data.obs.social = text; advanceTo('bienetre'); break;
+    case 'bienetre': state.data.obs.bienetre = text; advanceTo('complement'); break;
+    case 'complement': state.data.obs.complement = text; advanceTo('final'); break;
+  }
+}
+
+function advanceTo(next) {
+  state.step = next;
+  const stepsArr = ['participation', 'leviers', 'consignes', 'autonomie', 'social', 'bienetre', 'complement', 'final'];
+  updateProgress(4 + stepsArr.indexOf(next));
+
+  if (next === 'final') {
+    addBotMessage("Analyse finale en cours...");
+    setTimeout(() => renderAnalysis(buildAnalysis()), 1000);
+    return;
+  }
+
+  const p = state.data.pseudo;
+  const qMap = {
+    participation: `Comment se passe la participation de ${p} en classe ?`,
+    leviers: `Quels sont les points forts ou les moments où ${p} réussit le mieux ?`,
+    consignes: state.relances.consignes ? `Vous évoquiez les consignes. Qu'est-ce qui bloque précisément : la longueur ou la compréhension des termes ?` : `Comment ${p} réagit-il aux consignes ?`,
+    autonomie: state.relances.autonomie ? `Concernant l'autonomie évoquée, a-t-il besoin d'une aide humaine pour se lancer ou d'un support visuel ?` : `Peut-il démarrer ses tâches seul ?`,
+    social: state.relances.social ? `Vous mentionniez l'isolement social. Est-ce un retrait volontaire ou subit selon vous ?` : `Ses relations avec les autres élèves ?`,
+    bienetre: state.relances.bienetre ? `Au-delà du stress cité, comment décririez-vous son humeur globale ?` : `Son bien-être émotionnel ?`,
+    complement: `Un dernier point avant la synthèse ?`
+  };
+  setTimeout(() => addBotMessage(qMap[next]), 400);
+}
+
+function buildAnalysis() {
+  const d = state.data;
+  const hyps = []; const pistes = [];
+  
+  if (d.obs.autonomie.includes('aide') || state.relances.autonomie) {
+    hyps.push("Une fragilité de l'initiation de tâche (fonctions exécutives) semble freiner l'élève.");
+    pistes.push(d.age.includes('4-6') ? "Mise en place de rituels de départ imagés." : "Check-list visuelle de départ fixée sur le bureau.");
+  }
+  if (state.relances.social) {
+    hyps.push("L'isolement social impacte probablement la disponibilité cognitive pour les apprentissages.");
+    pistes.push("Structurer les interactions via des duos stables et des rôles précis en groupe.");
+  }
+  
+  return { hypotheses: hyps, pistes, levier: d.obs.leviers };
+}
+
+// UI HELPERS
+function startApp() { document.getElementById('landing').style.display = 'none'; document.getElementById('app').classList.add('active'); initState(); resetUI(); setTimeout(() => addBotMessage("Parlez-moi d'un élève qui vous préoccupe."), 300); }
+function resetApp() { initState(); resetUI(); startApp(); }
+function resetUI() { document.getElementById('chatContainer').innerHTML = ''; updateProgress(0); }
+function sendMessage() { const i = document.getElementById('userInput'); const t = i.value.trim(); if (!t) return; addUserMessage(t); processInput(t); i.value = ''; document.getElementById('sendBtn').disabled = true; }
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function addBotMessage(t) { const c = document.getElementById('chatContainer'); const m = document.createElement('div'); m.className = 'msg bot'; m.innerHTML = `<div class="msg-avatar">S</div><div class="msg-bubble">${t}</div>`; c.appendChild(m); scrollToBottom(); }
+function addUserMessage(t) { const c = document.getElementById('chatContainer'); const m = document.createElement('div'); m.className = 'msg user'; m.innerHTML = `<div class="msg-avatar">👤</div><div class="msg-bubble">${t}</div>`; c.appendChild(m); scrollToBottom(); }
+function showChoices(opts, cb) { const c = document.getElementById('chatContainer'); const w = document.createElement('div'); w.className = 'choices-wrap'; opts.forEach(o => { const b = document.createElement('button'); b.className = 'choice-btn'; b.textContent = o; b.onclick = () => { w.remove(); cb(o); }; w.appendChild(b); }); c.appendChild(w); scrollToBottom(); }
+function updateProgress(s) { document.getElementById('progressFill').style.width = (s * 12.5) + '%'; document.getElementById('progressLabel').textContent = `Étape ${Math.min(s,8)} / 8`; }
+function scrollToBottom() { const c = document.getElementById('chatContainer'); c.scrollTop = c.scrollHeight; }
+
+function renderAnalysis(data) {
+  const c = document.getElementById('chatContainer');
+  const fw = document.createElement('div'); fw.className = 'fiche-wrapper';
+  fw.innerHTML = `<div class="fiche"><div class="fiche-header"><h2>Synthèse SOA</h2></div><div class="fiche-body">
+    <div class="fiche-section"><div class="fiche-section-title">Hypothèses pédagogiques</div><ul>${data.hypotheses.map(h=>`<li>${h}</li>`).join('')}</ul></div>
+    <div class="fiche-section"><div class="fiche-section-title">Levier de réussite</div><p>${data.levier}</p></div>
+    <div class="fiche-section"><div class="fiche-section-title">Actions suggérées</div><ul>${data.pistes.map(p=>`<li>${p}</li>`).join('')}</ul></div>
+    <div class="fiche-section"><div class="fiche-section-title">Conseil Famille</div><p>Présentez les leviers avant les défis pour favoriser l'alliance éducative.</p></div>
+  </div></div>`;
+  c.appendChild(fw); scrollToBottom();
+}
+
+async function startDemo() {
+  startApp();
+  const profils = [
+    { nom: "Léo", msg: "Léo est souvent seul dans la cour et ne démarre jamais ses exercices seul.", age: "7-9 ans", lev: "Il adore dessiner.", aut: "Besoin d'aide pour se lancer." }
+  ];
+  const p = profils[0];
+  addBotMessage(`Simulation activée pour : **${p.nom}**`);
+  // LA SIMULATION ALIMENTE LE SYSTÈME POUR DE VRAI
+  addUserMessage(p.msg); processInput(p.msg);
+}
+</script>
+</body>
+</html>
