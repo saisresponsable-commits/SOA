@@ -1156,7 +1156,7 @@ function buildAnalysis() {
   // ── À SAVOIR ──
   if (d.diagnostic && d.diagnostic !== 'Aucune démarche en cours' && d.diagnostic !== 'Je ne sais pas') {
     const types = d.typesBesoin.length ? ` (${d.typesBesoin.join(', ')})` : '';
-    asavoir.push(`Situation diagnostique : ${d.diagnostic}${types}. Ces éléments orientent les pistes proposées.`);
+    asavoir.push(`Repères de contexte communiqués : ${d.diagnostic}${types}. Ces éléments orientent les pistes proposées.`);
   }
   if (obs.forces && obs.forces.length > 5) {
     asavoir.push(`Points d'appui observés : ${obs.forces.substring(0, 120)}${obs.forces.length > 120 ? '…' : ''}`);
@@ -1312,6 +1312,10 @@ Je ne conserve aucune donnée — tout reste dans votre navigateur, uniquement l
 Merci d'utiliser un prénom fictif pour l'élève dont vous allez me parler.
 
 Quand vous êtes prêt·e — qu'est-ce qui vous amène aujourd'hui ?`,
+  pseudo:            () => `Pour préserver l'anonymat, quel prénom fictif voulez-vous utiliser pour parler de cet élève ?`,
+  demande:           (p) => `Merci. Qu'aimeriez-vous obtenir à l'issue de cet échange au sujet de ${p} ?`,
+  niveau:            (p) => `Pour que je situe mieux le contexte, dans quel niveau scolaire est ${p} ?`,
+  age:               (p) => `Et quel est son âge approximatif ?`,
   diagnostic:        (p) => `Je vois. Est-ce qu'un diagnostic ou une évaluation a déjà été fait pour ${p} — ou est-ce qu'on travaille uniquement sur l'observation pour l'instant ?`,
   moments_difficiles:(p) => `Merci. Dans quels moments les difficultés de ${p} se voient-elles le plus ? Y a-t-il des situations qui semblent déclencher ou aggraver ce que vous observez ?`,
   moments_positifs:  (p) => `Et à l'inverse — quand est-ce que ça se passe mieux pour ${p} ? Quels moments, quelles activités, quels contextes semblent lui réussir davantage ?`,
@@ -1705,7 +1709,7 @@ function escapeHtml(t) {
 
 function renderAnalysis(data) {
   const container = document.getElementById('chatContainer');
-  addBotMessage("✅ Voici l'analyse. Elle croise vos observations, les appuis identifiés et quelques hypothèses pédagogiques — à lire comme des pistes de réflexion, pas des conclusions.");
+  addBotMessage("Voici une synthèse d'appui à la réflexion. Elle relie les observations partagées, des hypothèses de compréhension et des ajustements possibles. Elle ne constitue ni un diagnostic, ni un bilan spécialisé, ni un compte rendu professionnel.");
 
   // Indices
   const indicesDiv = document.createElement('div');
@@ -1737,7 +1741,7 @@ function renderAnalysis(data) {
     setTimeout(() => {
       const alertDiv = document.createElement('div');
       alertDiv.className = 'alert-box';
-      alertDiv.innerHTML = `<div class="alert-title">⚠️ Signaux d'alerte identifiés</div>${data.signaux_alerte.map(s=>`• ${s}`).join('<br>')}<br><br><small>Ces signaux suggèrent d'envisager un échange avec les parents, l'équipe pédagogique ou le CPMS/PMS.</small>`;
+      alertDiv.innerHTML = `<div class="alert-title">Points méritant un échange complémentaire</div>${data.signaux_alerte.map(s=>`• ${s}`).join('<br>')}<br><br><small>Ces éléments peuvent justifier un échange complémentaire avec les parents, l'équipe pédagogique ou le CPMS/PMS, sans préjuger d'une interprétation clinique.</small>`;
       container.appendChild(alertDiv);
       scrollToBottom();
     }, 300);
@@ -1780,36 +1784,38 @@ function renderAnalysis(data) {
 
 function buildFicheSections(data) {
   let html = '';
-  if (data.asavoir?.length) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(122,158,126,.15);color:var(--sage-dark)">✓</span> Ce qui soutient</div><div class="fiche-content"><ul>${data.asavoir.map(p=>`<li>${p}</li>`).join('')}</ul></div></div>`;
-  if (data.hypotheses?.length) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(30,45,64,.08);color:var(--navy)">?</span> Hypothèses pédagogiques</div><div class="fiche-content"><ul>${data.hypotheses.map(h=>`<li>${h}</li>`).join('')}</ul></div></div>`;
-  if (data.vigilance?.length) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(212,151,74,.15);color:var(--amber)">!</span> Points de vigilance</div><div class="fiche-content"><ul>${data.vigilance.map(p=>`<li>${p}</li>`).join('')}</ul></div></div>`;
+  if (data.asavoir?.length) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(122,158,126,.15);color:var(--sage-dark)">•</span> Points d'appui et repères issus de l'échange</div><div class="fiche-content"><ul>${data.asavoir.map(p=>`<li>${p}</li>`).join('')}</ul></div></div>`;
+  if (data.hypotheses?.length) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(30,45,64,.08);color:var(--navy)">?</span> Hypothèses de compréhension à explorer</div><div class="fiche-content"><ul>${data.hypotheses.map(h=>`<li>${h}</li>`).join('')}</ul></div></div>`;
+  if (data.vigilance?.length) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(212,151,74,.15);color:var(--amber)">!</span> Points de vigilance en contexte scolaire</div><div class="fiche-content"><ul>${data.vigilance.map(p=>`<li>${p}</li>`).join('')}</ul></div></div>`;
   if (data.pistes) {
-    const cats = {consignes:'📝 Consignes',supports:'🖼️ Supports visuels',organisation:'📋 Organisation',amenagements:'🔧 Aménagements',environnement:'🏫 Environnement'};
+    const cats = {consignes:'Consignes et formulation',supports:'Supports et étayages',organisation:'Organisation de la tâche',amenagements:'Ajustements concrets',environnement:'Environnement et cadre'};
     let pistesHtml = '';
     Object.entries(cats).forEach(([k,label]) => {
       if (data.pistes[k]?.length) pistesHtml += `<strong>${label} :</strong><ul>${data.pistes[k].map(p=>`<li>${p}</li>`).join('')}</ul>`;
     });
-    if (pistesHtml) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(30,45,64,.08);color:var(--navy)">→</span> Ajustements à tester</div><div class="fiche-content">${pistesHtml}</div></div>`;
+    if (pistesHtml) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(30,45,64,.08);color:var(--navy)">→</span> Ajustements pédagogiques à envisager et à tester</div><div class="fiche-content">${pistesHtml}</div></div>`;
   }
-  if (data.bien_etre_detail) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(122,158,126,.1);color:var(--sage-dark)">💚</span> Bien-être</div><div class="fiche-content">${data.bien_etre_detail}</div></div>`;
-  if (data.linguistique_detail) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(212,151,74,.1);color:var(--amber)">🗣️</span> Dimension linguistique</div><div class="fiche-content">${data.linguistique_detail}</div></div>`;
-  if (data.signaux_alerte?.length) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(196,120,120,.1);color:var(--rose)">⚠️</span> Signaux d'alerte</div><div class="fiche-content"><ul>${data.signaux_alerte.map(s=>`<li>${s}</li>`).join('')}</ul></div></div>`;
-  if (data.conclusion) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(30,45,64,.08);color:var(--navy)">★</span> Conclusion</div><div class="fiche-content" style="font-style:italic;color:var(--navy)">${data.conclusion}</div></div>`;
-  html += `<div style="font-size:11px;color:var(--muted);padding-top:8px;border-top:1px solid var(--border);margin-top:8px;">⚠️ Outil de réflexion pédagogique — Ne constitue pas une évaluation clinique.</div>`;
+  if (data.bien_etre_detail) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(122,158,126,.1);color:var(--sage-dark)">•</span> Repères autour du bien-être scolaire</div><div class="fiche-content">${data.bien_etre_detail}</div></div>`;
+  if (data.linguistique_detail) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(212,151,74,.1);color:var(--amber)">•</span> Repères autour de la dimension langagière</div><div class="fiche-content">${data.linguistique_detail}</div></div>`;
+  if (data.signaux_alerte?.length) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(196,120,120,.1);color:var(--rose)">!</span> Éléments justifiant un échange complémentaire</div><div class="fiche-content"><ul>${data.signaux_alerte.map(s=>`<li>${s}</li>`).join('')}</ul></div></div>`;
+  if (data.conclusion) html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(30,45,64,.08);color:var(--navy)">•</span> Repère final</div><div class="fiche-content" style="font-style:italic;color:var(--navy)">${data.conclusion}</div></div>`;
+  html += `<div class="fiche-section"><div class="fiche-section-title"><span style="background:rgba(30,45,64,.08);color:var(--navy)">i</span> Cadre de lecture</div><div class="fiche-content">Cette synthèse propose des pistes de compréhension et d'ajustement à partir des éléments partagés. Elle ne constitue ni un diagnostic, ni un bilan spécialisé, ni un compte rendu professionnel au sens institutionnel.</div></div>`;
   return html;
 }
 
 function buildFicheText(data) {
-  let t = "FICHE D'ANALYSE PÉDAGOGIQUE — SOA\n";
+  let t = "SYNTHÈSE D'APPUI À LA RÉFLEXION — SOA\n";
   t += `Date : ${new Date().toLocaleDateString('fr-BE')}\n\n`;
-  t += '--- INDICES ---\n';
+  t += "Cette synthèse propose des pistes de compréhension et d'ajustement à partir des éléments partagés. Elle ne constitue ni un diagnostic, ni un bilan spécialisé, ni un compte rendu professionnel.\n\n";
+  t += '--- INDICATEURS DE SITUATION ---\n';
   Object.entries(data.indices).forEach(([k,v]) => { t += `${k} : ${v.score}% (${v.statut})\n`; });
-  t += '\n--- À SAVOIR ---\n'; (data.asavoir||[]).forEach(p => t += `• ${p}\n`);
-  t += '\n--- VIGILANCE ---\n'; (data.vigilance||[]).forEach(p => t += `• ${p}\n`);
-  t += '\n--- PISTES ---\n';
+  t += "\n--- POINTS D'APPUI ET REPÈRES ---\n"; (data.asavoir||[]).forEach(p => t += `• ${p}\n`);
+  t += '\n--- HYPOTHÈSES DE COMPRÉHENSION À EXPLORER ---\n'; (data.hypotheses||[]).forEach(p => t += `• ${p}\n`);
+  t += '\n--- POINTS DE VIGILANCE ---\n'; (data.vigilance||[]).forEach(p => t += `• ${p}\n`);
+  t += '\n--- AJUSTEMENTS À ENVISAGER ET À TESTER ---\n';
   if (data.pistes) Object.entries(data.pistes).forEach(([k,arr]) => { if(arr?.length){t+=`${k}:\n`;arr.forEach(p=>t+=`  - ${p}\n`);} });
-  if (data.signaux_alerte?.length) { t += '\n--- SIGNAUX ---\n'; data.signaux_alerte.forEach(s=>t+=`• ${s}\n`); }
-  if (data.conclusion) t += `\n--- CONCLUSION ---\n${data.conclusion}\n`;
+  if (data.signaux_alerte?.length) { t += '\n--- ÉLÉMENTS JUSTIFIANT UN ÉCHANGE COMPLÉMENTAIRE ---\n'; data.signaux_alerte.forEach(s=>t+=`• ${s}\n`); }
+  if (data.conclusion) t += `\n--- REPÈRE FINAL ---\n${data.conclusion}\n`;
   return t;
 }
 
@@ -2036,6 +2042,1193 @@ function autoResize(el) {
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDemoChooser(); });
+
+
+// ============================================================
+// V9 PATCH — réponses libres acceptées + lecture multifactorielle
+// ============================================================
+const STEP_PROGRESS = {
+  context: 1,
+  pseudo: 1,
+  demande: 2,
+  niveau: 2,
+  age: 3,
+  diagnostic: 3,
+  typesBesoin: 3,
+  moments_difficiles: 4,
+  moments_positifs: 4,
+  forces: 5,
+  appuisExistants: 5,
+  participation: 6,
+  consignes: 6,
+  autonomie: 7,
+  social: 7,
+  bienetre: 8,
+  langue: 8,
+  complement: 8,
+  final: 8
+};
+
+function normalizeText(value) {
+  return (value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+}
+
+function setInputValue(value) {
+  const input = document.getElementById('userInput');
+  if (!input) return;
+  input.value = value;
+  autoResize(input);
+  document.getElementById('sendBtn').disabled = input.value.trim() === '';
+  input.focus();
+}
+
+function sendSuggestedAnswer(value) {
+  const input = document.getElementById('userInput');
+  if (!input) return;
+  input.value = value;
+  autoResize(input);
+  document.getElementById('sendBtn').disabled = false;
+  sendMessage();
+}
+
+function showChoices(options, callback, multi = false) {
+  document.getElementById('currentChoices')?.remove();
+  const container = document.getElementById('chatContainer');
+  const wrap = document.createElement('div');
+  wrap.className = 'choices-wrap';
+  wrap.id = 'currentChoices';
+
+  const hint = document.createElement('div');
+  hint.style.cssText = 'width:100%;font-size:11px;color:var(--muted);margin-bottom:6px;font-style:italic;';
+  hint.textContent = multi
+    ? 'Suggestions cliquables : vous pouvez aussi écrire librement votre réponse.'
+    : 'Suggestions cliquables : vous pouvez aussi répondre librement par écrit.';
+  wrap.appendChild(hint);
+
+  if (!multi) {
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.type = 'button';
+      btn.textContent = opt;
+      btn.onclick = () => {
+        wrap.remove();
+        if (typeof callback === 'function') callback(opt);
+        else sendSuggestedAnswer(opt);
+      };
+      wrap.appendChild(btn);
+    });
+  } else {
+    const selected = new Set();
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.type = 'button';
+      btn.textContent = opt;
+      btn.onclick = () => {
+        if (opt === 'Je préfère ne pas préciser') {
+          selected.clear();
+          selected.add(opt);
+          [...wrap.querySelectorAll('.choice-btn')].forEach(b => b.classList.toggle('selected', b.textContent === opt));
+          confirmBtn.disabled = false;
+          return;
+        }
+        selected.delete('Je préfère ne pas préciser');
+        const prefBtn = [...wrap.querySelectorAll('.choice-btn')].find(b => b.textContent === 'Je préfère ne pas préciser');
+        if (prefBtn) prefBtn.classList.remove('selected');
+        if (selected.has(opt)) {
+          selected.delete(opt);
+          btn.classList.remove('selected');
+        } else {
+          selected.add(opt);
+          btn.classList.add('selected');
+        }
+        confirmBtn.disabled = selected.size === 0;
+      };
+      wrap.appendChild(btn);
+    });
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.type = 'button';
+    confirmBtn.style.cssText = 'margin-top:10px;width:100%;padding:10px 16px;background:var(--navy);color:var(--cream);border:none;border-radius:10px;font-family:"DM Sans",sans-serif;font-size:13px;font-weight:600;cursor:pointer;opacity:0.45;transition:opacity .2s;';
+    confirmBtn.textContent = 'Envoyer la sélection';
+    confirmBtn.disabled = true;
+    confirmBtn.onclick = () => {
+      if (selected.size === 0) return;
+      wrap.remove();
+      const values = [...selected];
+      if (typeof callback === 'function') callback(values);
+      else sendSuggestedAnswer(values.join(', '));
+    };
+    const syncBtn = () => {
+      confirmBtn.style.opacity = confirmBtn.disabled ? '0.45' : '0.95';
+      confirmBtn.style.cursor = confirmBtn.disabled ? 'not-allowed' : 'pointer';
+    };
+    confirmBtn.addEventListener('mouseenter', () => { if (!confirmBtn.disabled) confirmBtn.style.opacity = '1'; });
+    confirmBtn.addEventListener('mouseleave', syncBtn);
+    const observer = new MutationObserver(syncBtn);
+    observer.observe(confirmBtn, { attributes: true });
+    syncBtn();
+    wrap.appendChild(confirmBtn);
+  }
+
+  container.appendChild(wrap);
+  scrollToBottom();
+}
+
+function parseChoiceFromText(step, text) {
+  const raw = (text || '').trim();
+  const t = normalizeText(raw);
+
+  if (step === 'demande') {
+    if (/comprendre|mieux comprendre|ce qu.?il vit|ce qu.?elle vit|analyser/.test(t)) return 'Mieux comprendre ce que vit cet élève';
+    if (/amenagement|adaptation|concret|adapter|piste/.test(t)) return 'Trouver des aménagements concrets';
+    if (/concertation|equipe|reunion/.test(t)) return "Préparer une concertation d'équipe";
+    if (/fiche|synthese|document|resume/.test(t)) return 'Constituer une fiche de synthèse';
+  }
+
+  if (step === 'niveau') {
+    if (/matern/.test(t)) return 'Maternelle (M1-M3)';
+    if (/(1re|1ere|premiere|cp|ce1|1-2).*(primaire)?|(2e|2eme|deuxieme).*(primaire)?/.test(t)) return '1re-2e primaire';
+    if (/(3e|3eme|troisieme|4e|4eme|quatrieme).*(primaire)?/.test(t)) return '3e-4e primaire';
+    if (/(5e|5eme|cinquieme|6e|6eme|sixieme).*(primaire)?/.test(t)) return '5e-6e primaire';
+    if (/(1re|1ere|premiere|2e|2eme|deuxieme).*(second)/.test(t)) return '1re-2e secondaire';
+    if (/(3e|3eme|troisieme|4e|4eme|quatrieme|5e|5eme|6e|6eme).*(second)/.test(t)) return '3e-6e secondaire';
+    if (/primaire/.test(t)) return '3e-4e primaire';
+    if (/second/.test(t)) return '1re-2e secondaire';
+  }
+
+  if (step === 'age') {
+    const m = t.match(/(\d{1,2})/);
+    if (m) {
+      const age = parseInt(m[1], 10);
+      if (age <= 5) return '4-5 ans';
+      if (age <= 7) return '6-7 ans';
+      if (age <= 9) return '8-9 ans';
+      if (age <= 11) return '10-11 ans';
+      if (age <= 13) return '12-13 ans';
+      if (age <= 15) return '14-15 ans';
+      return '16-18 ans';
+    }
+  }
+
+  if (step === 'diagnostic') {
+    if (/diagnostic.*pose|deja diagnost|oui/.test(t)) return 'Oui, un diagnostic est posé';
+    if (/evaluation en cours|bilan en cours|en cours d.?evaluation|en observation/.test(t)) return 'Une évaluation est en cours';
+    if (/suspect|soupcon|on pense|hypothese/.test(t)) return 'Des difficultés suspectées';
+    if (/aucun|rien|pas de demarche|aucune demarche/.test(t)) return 'Aucune démarche en cours';
+    if (/je ne sais pas|incertain|inconnu/.test(t)) return 'Je ne sais pas';
+  }
+
+  return raw;
+}
+
+function parseNeedsFromText(text) {
+  const raw = (text || '').trim();
+  if (!raw) return [];
+  const t = normalizeText(raw);
+  const matches = [];
+  const manualAliases = {
+    'TDAH': ['tdah','hyperactiv','attention'],
+    'TSA': ['tsa','autisme','autist'],
+    'Dyslexie': ['dyslex'],
+    'Dysorthographie': ['dysorth'],
+    'Dyscalculie': ['dyscalcul'],
+    'Dyspraxie / TDC': ['dysprax','tdc'],
+    'Dysphasie': ['dysphas'],
+    'Dysexécutif': ['dysexec','executif'],
+    'Trouble anxieux': ['anxieux','anxiete'],
+    'Trouble moteur': ['moteur','motric'],
+    'Trouble sensoriel': ['sensoriel','sensor'],
+    'Trouble du langage': ['langage']
+  };
+  Object.entries(manualAliases).forEach(([label, aliases]) => {
+    if (aliases.some(a => t.includes(normalizeText(a))) && !matches.includes(label)) matches.push(label);
+  });
+  if (/ne pas preciser|ne rien preciser|je prefere ne pas/.test(t)) return ['Je préfère ne pas préciser'];
+  if (matches.length) return matches;
+  return raw.split(/,|;|et/).map(v => v.trim()).filter(Boolean);
+}
+
+function askStep(step) {
+  if (step === 'final') {
+    updateProgress(8);
+    setTimeout(() => renderAnalysis(buildAnalysis()), 500);
+    return;
+  }
+
+  const p = state.data.pseudo || "l'élève";
+  let question = QUESTIONS[step] ? QUESTIONS[step](p) : '';
+  let choices = null;
+  let multi = false;
+
+  if (step === 'demande') choices = CHOICES.demande;
+  else if (step === 'niveau') choices = CHOICES.niveau;
+  else if (step === 'age') choices = CHOICES.age;
+  else if (step === 'diagnostic') choices = CHOICES.diagnostic;
+  else if (step === 'typesBesoin') {
+    question = `Vous pouvez préciser — quel(s) type(s) de besoin ?`;
+    choices = CHOICES.typesBesoin;
+    multi = true;
+  }
+
+  updateProgress(STEP_PROGRESS[step] || 1);
+  setTimeout(() => {
+    addBotMessage(question);
+    if (choices) showChoices(choices, null, multi);
+  }, 320);
+}
+
+function moveToStep(nextStep) {
+  state.step = nextStep;
+  askStep(nextStep);
+}
+
+function processInput(text) {
+  const step = state.step;
+  const raw = (text || '').trim();
+  if (!raw) return;
+
+  switch (step) {
+    case 'context':
+      state.data.obs.histoire = raw;
+      moveToStep('pseudo');
+      return;
+    case 'pseudo': {
+      const cleanPseudo = raw.split(/\s+/)[0].replace(/[.,;:!?]+$/,'');
+      state.data.pseudo = cleanPseudo || "l'élève";
+      moveToStep('demande');
+      return;
+    }
+    case 'demande':
+      state.data.demande = parseChoiceFromText('demande', raw);
+      moveToStep('niveau');
+      return;
+    case 'niveau':
+      state.data.niveau = parseChoiceFromText('niveau', raw);
+      moveToStep('age');
+      return;
+    case 'age':
+      state.data.age = parseChoiceFromText('age', raw);
+      moveToStep('diagnostic');
+      return;
+    case 'diagnostic': {
+      const parsed = parseChoiceFromText('diagnostic', raw);
+      state.data.diagnostic = parsed;
+      const diagNorm = normalizeText(parsed);
+      if (/oui|evaluation en cours|des difficultes suspectees|suspect/.test(diagNorm)) moveToStep('typesBesoin');
+      else moveToStep('moments_difficiles');
+      return;
+    }
+    case 'typesBesoin':
+      state.data.typesBesoin = parseNeedsFromText(raw);
+      moveToStep('moments_difficiles');
+      return;
+    case 'moments_difficiles':
+      state.data.obs.transitions = raw;
+      moveToStep('moments_positifs');
+      return;
+    case 'moments_positifs':
+      state.data.obs.moments_positifs = raw;
+      moveToStep('forces');
+      return;
+    case 'forces':
+      state.data.obs.forces = raw;
+      moveToStep('appuisExistants');
+      return;
+    case 'appuisExistants':
+      state.data.obs.appuisExistants = raw;
+      moveToStep('participation');
+      return;
+    case 'participation':
+      state.data.obs.participation = raw;
+      moveToStep('consignes');
+      return;
+    case 'consignes':
+      state.data.obs.consignes = raw;
+      moveToStep('autonomie');
+      return;
+    case 'autonomie':
+      state.data.obs.autonomie = raw;
+      moveToStep('social');
+      return;
+    case 'social':
+      state.data.obs.social = raw;
+      moveToStep('bienetre');
+      return;
+    case 'bienetre':
+      state.data.obs.bienetre = raw;
+      moveToStep('langue');
+      return;
+    case 'langue':
+      state.data.obs.langue = raw;
+      moveToStep('complement');
+      return;
+    case 'complement':
+      state.data.obs.complement = raw;
+      moveToStep('final');
+      return;
+    default:
+      return;
+  }
+}
+
+function sendMessage() {
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if (!text) return;
+  document.getElementById('currentChoices')?.remove();
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+  addUserMessage(text);
+  processInput(text);
+}
+
+function splitIntoSegments(text) {
+  return (text || '')
+    .split(/(?:[.!?;]+\s+)|(?:,\s+(?:mais|et|car|donc|or|puis)\s+)|(?:\s+(?:mais|cependant|pourtant|alors que|tandis que)\s+)/i)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+function detectSignaux(obs) {
+  const texte = [
+    obs.histoire || '', obs.participation || '', obs.consignes || '',
+    obs.autonomie || '', obs.social || '', obs.transitions || '',
+    obs.bienetre || '', obs.moments_positifs || '', obs.forces || '', obs.appuisExistants || '', obs.complement || ''
+  ].join(' ');
+
+  const signauxDetectes = [];
+  const hypothesesInferees = [];
+  const dimsInferees = new Set();
+  const seenPairs = new Set();
+  const segments = splitIntoSegments(texte.toLowerCase());
+
+  segments.forEach(segment => {
+    Object.entries(SIGNAUX_OBSERVATION).forEach(([key, signal]) => {
+      const matchedPatterns = signal.patterns.filter(p => segment.includes(p.toLowerCase()));
+      if (!matchedPatterns.length) return;
+      const pairKey = `${key}::${segment}`;
+      if (!seenPairs.has(pairKey)) {
+        seenPairs.add(pairKey);
+        signauxDetectes.push({ key, segment, matchedPatterns });
+      }
+      signal.dimensions.forEach(d => dimsInferees.add(d));
+      signal.hypotheses.forEach(h => {
+        if (!hypothesesInferees.includes(h) && hypothesesInferees.length < 7) hypothesesInferees.push(h);
+      });
+    });
+  });
+
+  return {
+    signauxDetectes: signauxDetectes.map(s => s.key),
+    hypothesesInferees,
+    dimsInferees: [...dimsInferees],
+    details: signauxDetectes
+  };
+}
+
+function startApp() {
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('app').classList.add('active');
+  setupInputHandler();
+  initState();
+  resetUI();
+  setTimeout(() => {
+    addBotMessage(QUESTIONS.context(), true);
+    updateProgress(1);
+  }, 300);
+}
+
+function resetApp() {
+  initState();
+  resetUI();
+  setTimeout(() => {
+    addBotMessage(QUESTIONS.context(), true);
+    updateProgress(1);
+  }, 300);
+}
+
 </script>
+
+<script>
+// ============================================================
+// V10.2 PATCH — même interface, moteur renforcé
+// - texte libre toujours valide
+// - puces = aides uniquement
+// - lecture multifactorielle avec polarité/négation
+// - ajout de la dimension familiale
+// ============================================================
+
+(function () {
+  const STEP_CHOICES = {
+    demande: CHOICES.demande,
+    niveau: CHOICES.niveau,
+    age: CHOICES.age,
+    diagnostic: CHOICES.diagnostic,
+    langue: ['Oui, sans difficulté particulière', 'Non, pas complètement', 'Je ne sais pas', 'Le visuel aide beaucoup']
+  };
+
+  function norm(s) {
+    return (s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function splitSegments(text) {
+    return (text || '')
+      .split(/(?:[.!?;]+\s+)|(?:,\s+)|(?:\n+)|(?:\s+(?:mais|cependant|pourtant|alors que|tandis que|par contre|en revanche)\s+)/i)
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+
+  function hasNegationBefore(segment, idx) {
+    const before = segment.slice(Math.max(0, idx - 35), idx);
+    return /\b(ne|n'|pas|plus|jamais|aucun|aucune|sans|guere|guer[eè]re|rarement|peu)\b/i.test(before);
+  }
+
+  function countPattern(text, patterns, opts = {}) {
+    const segs = splitSegments(norm(text));
+    let count = 0;
+    segs.forEach(seg => {
+      patterns.forEach(p => {
+        const rx = p instanceof RegExp ? p : new RegExp(p, 'i');
+        let m;
+        const source = seg;
+        if ((m = source.match(rx))) {
+          const idx = source.search(rx);
+          const neg = hasNegationBefore(source, idx);
+          if (opts.positive && neg) return;
+          if (opts.negative && neg) return;
+          count += 1;
+        }
+      });
+    });
+    return count;
+  }
+
+  function textIncludesAny(text, patterns) {
+    const n = norm(text);
+    return patterns.some(p => (p instanceof RegExp ? p.test(n) : n.includes(norm(p))));
+  }
+
+  function pushUnique(arr, item) {
+    if (!item) return;
+    if (!arr.includes(item)) arr.push(item);
+  }
+
+  function uniqueConcat(target, items, maxLen = 8) {
+    (items || []).forEach(item => {
+      if (target.length < maxLen && !target.includes(item)) target.push(item);
+    });
+  }
+
+  function parseTypesFromText(text) {
+    const n = norm(text);
+    const found = [];
+    Object.values(TROUBLES_DB).forEach(t => {
+      const pats = [t.label, ...(t.aliases || [])];
+      if (pats.some(p => n.includes(norm(p)))) found.push(t.label);
+    });
+    if (found.length === 0) {
+      if (/\bdyspra/.test(n)) found.push('Dyspraxie / TDC');
+      if (/\bdyspha/.test(n)) found.push('Dysphasie');
+      if (/\bdysex/.test(n)) found.push('Dysexécutif');
+      if (/\banx/.test(n)) found.push('Trouble anxieux');
+    }
+    return [...new Set(found)];
+  }
+
+  function getProgressForStep(step) {
+    const map = {
+      context: 1, pseudo: 1, demande: 2, niveau: 2, age: 3, diagnostic: 3,
+      moments_difficiles: 4, moments_positifs: 4, forces: 5, appuisExistants: 5,
+      participation: 6, consignes: 6, autonomie: 7, social: 7,
+      bienetre: 8, langue: 8, famille: 8, complement: 8, final: 8, post_analysis: 8
+    };
+    return map[step] || 1;
+  }
+
+  function askCurrentStep() {
+    const step = state.step;
+    const p = state.data.pseudo || "l'élève";
+    const q = QUESTIONS[step] ? QUESTIONS[step](p) : null;
+    if (!q) return;
+    setTimeout(() => {
+      addBotMessage(q);
+      const choices = STEP_CHOICES[step];
+      if (choices && choices.length) {
+        showChoices(choices, choice => {
+          const input = document.getElementById('userInput');
+          if (input) {
+            input.value = Array.isArray(choice) ? choice.join(', ') : choice;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          sendMessage();
+        }, false);
+      }
+    }, 350);
+  }
+
+  function genericQuestionIfNeeded(previousStep, userText) {
+    const p = state.data.pseudo || "l'élève";
+    const n = norm(userText);
+    if (previousStep === 'moments_difficiles' && /(social|ami|copain|groupe|seul|isole)/.test(n)) {
+      return `J'entends déjà des éléments sur la place de ${p} dans le groupe. À l'inverse, y a-t-il des moments ou des contextes où cela se passe mieux pour ${p} ?`;
+    }
+    return null;
+  }
+
+  function extractObservationSignals(obs) {
+    const fields = [
+      obs.histoire, obs.moments_difficiles, obs.moments_positifs, obs.forces,
+      obs.appuisExistants, obs.participation, obs.consignes, obs.autonomie,
+      obs.social, obs.transitions, obs.bienetre, obs.langue, obs.famille, obs.complement
+    ].filter(Boolean).join(' ');
+    const segments = splitSegments(fields);
+    const dims = new Set();
+    const hypotheses = [];
+    const details = [];
+
+    segments.forEach(seg => {
+      const segNorm = norm(seg);
+      Object.entries(SIGNAUX_OBSERVATION).forEach(([key, signal]) => {
+        const hits = (signal.patterns || []).filter(p => segNorm.includes(norm(p)));
+        if (hits.length) {
+          signal.dimensions.forEach(d => dims.add(d));
+          uniqueConcat(hypotheses, signal.hypotheses, 10);
+          details.push({ key, segment: seg, hits });
+        }
+      });
+    });
+
+    // Dimension familiale ajoutée
+    const fam = norm(obs.famille || '');
+    if (fam && /(separation|garde|conflit|violence|famil|maison|precar|social|financ|absence parent|peu de cadre|instable|demenage|placement|protection)/.test(fam)) {
+      dims.add('emotionnel');
+      dims.add('autonomie');
+      details.push({ key: 'famille', segment: obs.famille, hits: ['contexte familial'] });
+      pushUnique(hypotheses, "Le contexte familial peut peser sur la disponibilité émotionnelle et scolaire de l'élève, sans expliquer à lui seul toute la situation");
+      pushUnique(hypotheses, "Une insécurité ou une instabilité autour de l'école et de la maison peut majorer le décrochage, l'irritabilité ou la fatigue");
+    }
+
+    return { dimsInferees: [...dims], hypothesesInferees: hypotheses, details };
+  }
+
+  initState = function () {
+    state = {
+      step: 'context',
+      stepNum: 1,
+      data: {
+        pseudo: "l'élève",
+        demande: '',
+        niveau: '',
+        age: '',
+        diagnostic: '',
+        typesBesoin: [],
+        obs: {
+          histoire: '',
+          moments_difficiles: '',
+          moments_positifs: '',
+          participation: '',
+          forces: '',
+          appuisExistants: '',
+          consignes: '',
+          autonomie: '',
+          social: '',
+          transitions: '',
+          bienetre: '',
+          langue: '',
+          famille: '',
+          complement: ''
+        },
+        scores: { inclusion: 0, social: 0, autonomie: 0, bienetre: 0, langue: 0 }
+      }
+    };
+  };
+
+  QUESTIONS.famille = (p) => `Y a-t-il des éléments de contexte familial qui vous semblent importants à garder en tête pour comprendre la situation de ${p} à l'école ?`;
+  STEPS_ORDER.splice(STEPS_ORDER.indexOf('complement'), 0, 'famille');
+
+  updateProgress = function(step) {
+    const fill = document.getElementById('progressFill');
+    const label = document.getElementById('progressLabel');
+    const pct = Math.round((Math.min(step, 8) / 8) * 100);
+    if (fill) fill.style.width = pct + '%';
+    if (label) label.textContent = `Étape ${Math.min(step, 8)} / 8`;
+  };
+
+  advanceTo = function(next, prevText = '') {
+    state.step = next;
+    updateProgress(getProgressForStep(next));
+    document.getElementById('currentChoices')?.remove();
+
+    if (next === 'final') {
+      setTimeout(() => {
+        addBotMessage("Merci pour tout ça. Je prépare l'analyse…");
+        setTimeout(() => {
+          const data = buildAnalysis();
+          document.querySelectorAll('.fiche-wrapper, .indices-grid, .alert-box').forEach(el => el.remove());
+          renderAnalysis(data);
+        }, 800);
+      }, 350);
+      return;
+    }
+
+    const custom = genericQuestionIfNeeded(next, prevText);
+    if (custom) {
+      setTimeout(() => addBotMessage(custom), 350);
+    } else {
+      askCurrentStep();
+    }
+  };
+
+  processInput = function(text) {
+    const raw = (text || '').trim();
+    const step = state.step;
+    const d = state.data;
+    const obs = d.obs;
+
+    switch(step) {
+      case 'context':
+        obs.histoire = raw;
+        state.step = 'pseudo';
+        updateProgress(1);
+        setTimeout(() => {
+          addBotMessage(`Merci de me partager cela. Pour préserver l'anonymat, quel prénom fictif voulez-vous utiliser pour parler de cet élève ?`);
+        }, 350);
+        break;
+
+      case 'pseudo':
+        d.pseudo = raw.split(/\s+/)[0] || "l'élève";
+        advanceTo('demande', raw);
+        break;
+
+      case 'demande':
+        d.demande = raw;
+        advanceTo('niveau', raw);
+        break;
+
+      case 'niveau':
+        d.niveau = raw;
+        advanceTo('age', raw);
+        break;
+
+      case 'age':
+        d.age = raw;
+        advanceTo('diagnostic', raw);
+        break;
+
+      case 'diagnostic':
+        d.diagnostic = raw;
+        const inferred = parseTypesFromText(raw);
+        if (inferred.length) d.typesBesoin = inferred;
+        advanceTo('moments_difficiles', raw);
+        break;
+
+      case 'moments_difficiles':
+        obs.moments_difficiles = raw;
+        obs.transitions = raw; // compatibilité avec l'ancien moteur
+        advanceTo('moments_positifs', raw);
+        break;
+
+      case 'moments_positifs':
+        obs.moments_positifs = raw;
+        advanceTo('forces', raw);
+        break;
+
+      case 'forces':
+        obs.forces = raw;
+        advanceTo('appuisExistants', raw);
+        break;
+
+      case 'appuisExistants':
+        obs.appuisExistants = raw;
+        advanceTo('participation', raw);
+        break;
+
+      case 'participation':
+        obs.participation = raw;
+        advanceTo('consignes', raw);
+        break;
+
+      case 'consignes':
+        obs.consignes = raw;
+        advanceTo('autonomie', raw);
+        break;
+
+      case 'autonomie':
+        obs.autonomie = raw;
+        advanceTo('social', raw);
+        break;
+
+      case 'social':
+        obs.social = raw;
+        advanceTo('bienetre', raw);
+        break;
+
+      case 'bienetre':
+        obs.bienetre = raw;
+        advanceTo('langue', raw);
+        break;
+
+      case 'langue':
+        obs.langue = raw;
+        advanceTo('famille', raw);
+        break;
+
+      case 'famille':
+        obs.famille = raw;
+        advanceTo('complement', raw);
+        break;
+
+      case 'complement':
+        obs.complement = raw;
+        advanceTo('final', raw);
+        break;
+
+      case 'post_analysis':
+        handlePostAnalysis(raw);
+        break;
+    }
+  };
+
+  sendMessage = function() {
+    const input = document.getElementById('userInput');
+    const text = (input.value || '').trim();
+    if (!text) return;
+    document.getElementById('currentChoices')?.remove();
+    input.value = '';
+    input.style.height = 'auto';
+    document.getElementById('sendBtn').disabled = true;
+    addUserMessage(text);
+    processInput(text);
+  };
+
+  detectSignaux = function(obs) {
+    return extractObservationSignals(obs);
+  };
+
+  computeScores = function() {
+    const d = state.data;
+    const obs = d.obs;
+
+    const all = {
+      histoire: obs.histoire || '',
+      diff: obs.moments_difficiles || obs.transitions || '',
+      pos: obs.moments_positifs || '',
+      forces: obs.forces || '',
+      appuis: obs.appuisExistants || '',
+      part: obs.participation || '',
+      cons: obs.consignes || '',
+      auto: obs.autonomie || '',
+      social: obs.social || '',
+      bien: obs.bienetre || '',
+      langue: obs.langue || '',
+      fam: obs.famille || '',
+      compl: obs.complement || ''
+    };
+
+    let inc = 68, soc = 66, aut = 62, bien = 62, lang = 82;
+
+    const globalNeg = countPattern(all.histoire + ' ' + all.diff, [
+      /decroch/, /pas motive/, /demotive/, /desengag/, /mal a l.integrer/, /refus/, /opposition/, /aucune matiere/, /toutes? les matieres/
+    ], { negative: true });
+    inc -= globalNeg * 8;
+    bien -= globalNeg * 5;
+
+    const allOnlyGym = /(seule?\s+la\s+gym|uniquement\s+la\s+gym|seul.*sport|uniquement.*sport)/i.test(norm(all.diff + ' ' + all.pos));
+    if (allOnlyGym) { inc -= 6; bien -= 4; }
+
+    const consNeg = countPattern(all.cons, [
+      /ne comprend/, /a besoin de visuel/, /visuel/, /si on montre/, /perd le fil/, /consigne.*long/, /doit voir/
+    ], { negative: true });
+    const consPos = countPattern(all.cons, [/comprend bien/, /pas de souci/, /pas de probleme/, /autonome avec les consignes/], { positive: true });
+    inc -= consNeg * 6;
+    inc += consPos * 3;
+
+    const autoHeavy = countPattern(all.auto + ' ' + all.appuis, [
+      /sans relance/, /ne fonctionne pas/, /dois rester a ses cotes/, /besoin d.une presence/, /ne demarre pas/, /attend l.adulte/, /besoin d.etre relance/, /bloque/
+    ], { negative: true });
+    const autoPos = countPattern(all.auto, [/peut demarrer seul/, /autonome/, /se lance seul/, /demande de l.aide/], { positive: true });
+    aut -= autoHeavy * 9;
+    inc -= autoHeavy * 4;
+    aut += autoPos * 4;
+
+    const socialHeavy = countPattern(all.social + ' ' + all.part, [
+      /isole/, /reste a part/, /seul/, /participe peu/, /conflit/, /tension/, /ne sait pas interagir/, /retrait/, /evite les autres/
+    ], { negative: true });
+    const socialPos = countPattern(all.social, [/a des amis/, /integre/, /s.entend bien/, /liens stables/], { positive: true });
+    soc -= socialHeavy * 8;
+    bien -= Math.min(8, socialHeavy * 2);
+    soc += socialPos * 4;
+
+    const bienHeavy = countPattern(all.bien + ' ' + all.histoire + ' ' + all.compl, [
+      /demotive/, /pas motive/, /ne comprend plus l.interet/, /stress/, /anx/, /epuise/, /fatigue/, /decourag/, /souffrance/, /plus l.interet de l.ecole/, /pleure/, /detresse/
+    ], { negative: true });
+    const bienPos = countPattern(all.bien, [/calme/, /serein/, /motivation stable/, /va bien/, /heureux/], { positive: true });
+    bien -= bienHeavy * 8;
+    bien += bienPos * 4;
+
+    const famHeavy = countPattern(all.fam, [
+      /separation/, /conflit/, /violence/, /precari/, /social/, /financier/, /peu d.investissement parental/, /maison compliqu/, /garde alternee compliquee/, /absence parentale/, /cadre instable/
+    ], { negative: true });
+    if (famHeavy > 0) {
+      bien -= 8 + (famHeavy - 1) * 3;
+      soc -= 3;
+      aut -= 3;
+      inc -= 3;
+    }
+
+    const langNeg = countPattern(all.langue, [
+      /pas sa langue/, /barriere/, /allophone/, /primo/, /ne parle pas francais/, /comprend mal le francais/
+    ], { negative: true });
+    const langPos = countPattern(all.langue, [
+      /parle francais sans souci/, /pas de souci/, /francais sans probleme/, /oui/, /langue maternelle/
+    ], { positive: true });
+    lang -= langNeg * 18;
+    lang += langPos * 4;
+
+    // Leviers ponctuels ≠ fonctionnement global
+    if (textIncludesAny(all.pos + ' ' + all.appuis, ['moins de contraintes', 'liberte de mouvement', 'avec ma presence', 'quand je suis a cote', 'quand on montre'])) {
+      inc += 1; // appui réel
+    }
+    if (textIncludesAny(all.appuis, ['ma presence', 'quand je suis a cote', 'si je reste a ses cotes'])) {
+      aut -= 8; // dépendance à l'adulte
+    }
+
+    // Types de besoins explicités
+    const types = (d.typesBesoin || []).join(' ').toLowerCase();
+    if (types.includes('tdah')) {
+      aut -= 3; inc -= 2;
+    }
+    if (types.includes('tsa')) {
+      soc -= 4; bien -= 2;
+    }
+    if (types.includes('dys')) {
+      inc -= 2;
+    }
+    if (types.includes('anx')) {
+      bien -= 5;
+    }
+
+    const clamp = v => Math.max(10, Math.min(95, Math.round(v)));
+    d.scores = {
+      inclusion: clamp(inc),
+      social: clamp(soc),
+      autonomie: clamp(aut),
+      bienetre: clamp(bien),
+      langue: clamp(lang)
+    };
+  };
+
+  buildAnalysis = function() {
+    computeScores();
+    const d = state.data;
+    const s = d.scores;
+    const obs = d.obs;
+    const signaux = detectSignaux(obs);
+    const dimsActives = signaux.dimsInferees || [];
+    const hypotheses = [...(signaux.hypothesesInferees || [])];
+    const asavoir = [];
+    const vigilance = [];
+    const signauxAlerte = [];
+    const pistes = { consignes: [], supports: [], organisation: [], amenagements: [], environnement: [] };
+
+    if (d.diagnostic) pushUnique(asavoir, `Repères de contexte communiqués : ${d.diagnostic}. Ces éléments orientent la lecture, sans valoir conclusion diagnostique.`);
+    if (d.typesBesoin && d.typesBesoin.length) pushUnique(asavoir, `Besoins ou hypothèses évoqués : ${d.typesBesoin.join(', ')}.`);
+    if (obs.forces) pushUnique(asavoir, `Points d'appui observés : ${obs.forces}`);
+    if (obs.appuisExistants) pushUnique(asavoir, `Ce qui aide déjà : ${obs.appuisExistants}`);
+    if (obs.moments_positifs) pushUnique(asavoir, `Contextes favorables repérés : ${obs.moments_positifs}`);
+    if (obs.consignes && /visuel|montr|exemple|schema/i.test(obs.consignes)) {
+      pushUnique(asavoir, "Les supports visuels, les exemples concrets ou la démonstration semblent constituer des leviers d'accès utiles.");
+    }
+    if (obs.famille) {
+      pushUnique(asavoir, `Éléments de contexte familial à garder en tête : ${obs.famille}`);
+      pushUnique(hypotheses, "Le contexte extra-scolaire peut majorer la fatigue, la disponibilité fluctuante ou la difficulté à investir l'école, sans suffire à expliquer toute la situation.");
+    }
+    if (d.age) pushUnique(asavoir, `Âge : ${d.age} — à prendre en compte dans l'ajustement des attentes et de l'étayage.`);
+    if (dimsActives.length) pushUnique(asavoir, `Dimensions fonctionnelles identifiées : ${dimsActives.map(d => DIMENSIONS_OBSERVATION[d]?.label || d).join(', ')}.`);
+
+    if (s.inclusion < 55) pushUnique(vigilance, "Ne pas confondre décrochage, passivité ou faible engagement avec un simple manque de volonté.");
+    if (s.autonomie < 55) pushUnique(vigilance, "La présence adulte ou la relance peuvent aujourd'hui servir d'étayage nécessaire ; cela ne signifie pas que l'élève ne veut pas faire.");
+    if (s.social < 55) pushUnique(vigilance, "L'isolement, le retrait ou les conflits répétés avec les pairs méritent une attention spécifique en contexte scolaire.");
+    if (s.bienetre < 55) pushUnique(vigilance, "La démotivation, la fatigue ou la perte de sens scolaire peuvent altérer fortement l'accès aux apprentissages.");
+    if (obs.famille && /(separation|conflit|precari|violence|instable|absence)/i.test(norm(obs.famille))) {
+      pushUnique(vigilance, "Le contexte familial évoqué peut peser sur la sécurité émotionnelle et la disponibilité scolaire ; il mérite d'être pris en compte dans la lecture de la situation.");
+    }
+
+    if (obs.consignes && /visuel|montr|exemple|schema/i.test(obs.consignes)) {
+      uniqueConcat(pistes.consignes, [
+        "Donner une consigne à la fois, oralement et avec un appui visuel",
+        "Montrer un exemple concret avant le lancement",
+        "Faire reformuler l'attendu avec ses propres mots"
+      ], 5);
+      uniqueConcat(pistes.supports, [
+        "Check-list visuelle des étapes",
+        "Support modèle ou schéma de la tâche",
+        "Code couleur stable pour repérer les étapes"
+      ], 5);
+    }
+
+    if (s.autonomie < 60) {
+      uniqueConcat(pistes.organisation, [
+        "Découper les tâches en sous-objectifs courts",
+        "Sécuriser l'entrée dans la tâche avec une première étape faite ensemble",
+        "Prévoir un point d'étape rapide plutôt qu'une présence continue"
+      ], 6);
+      uniqueConcat(pistes.environnement, [
+        "Mettre en place un signal discret de recentrage",
+        "Positionner l'élève de façon à faciliter l'étayage sans le stigmatiser"
+      ], 4);
+    }
+
+    if (s.social < 60) {
+      uniqueConcat(pistes.amenagements, [
+        "Prévoir des binômes ou petits groupes très cadrés plutôt que des groupes laissés au hasard",
+        "Soutenir explicitement les codes d'interaction attendus dans certaines situations"
+      ], 5);
+      uniqueConcat(pistes.environnement, [
+        "Repérer un ou deux pairs appuis dans la classe",
+        "Éviter les mises en échec publiques dans les interactions sociales"
+      ], 5);
+    }
+
+    if (s.bienetre < 60) {
+      uniqueConcat(pistes.organisation, [
+        "Alterner temps d'effort et temps plus souples",
+        "Préserver des activités ou entrées motivantes comme leviers d'engagement"
+      ], 5);
+      uniqueConcat(pistes.amenagements, [
+        "Prévoir un échange avec l'équipe et, si utile, avec les parents ou le PMS autour de la perte de sens scolaire"
+      ], 4);
+    }
+
+    // Apports liés aux besoins évoqués
+    (d.typesBesoin || []).forEach(typeLabel => {
+      const entry = Object.values(TROUBLES_DB).find(t => t.label.toLowerCase() === typeLabel.toLowerCase());
+      if (entry && entry.amenagements) {
+        Object.keys(pistes).forEach(cat => uniqueConcat(pistes[cat], entry.amenagements[cat] || [], 7));
+      }
+    });
+
+    // Hypothèses ciblées pour éviter les paradoxes
+    if (/(pas motive|demotive|decroch|plus l.interet)/i.test(norm(obs.histoire + ' ' + obs.bienetre))) {
+      pushUnique(hypotheses, "La démotivation décrite peut traduire un rapport à l'école fragilisé, possiblement nourri par des expériences répétées d'échec, d'incompréhension ou d'effort coûteux.");
+    }
+    if (/(ma presence|rester a ses cotes|sans relance)/i.test(norm(obs.appuisExistants + ' ' + obs.autonomie))) {
+      pushUnique(hypotheses, "Le besoin d'étayage adulte paraît important à ce stade, notamment pour entrer dans la tâche et maintenir l'engagement.");
+    }
+    if (/(seule? la gym|moins de contraintes|liberte de mouvement)/i.test(norm(obs.moments_difficiles + ' ' + obs.moments_positifs))) {
+      pushUnique(hypotheses, "Le fait que cela aille mieux dans des contextes plus moteurs, moins contraints ou plus souples constitue un levier utile, mais ne signifie pas pour autant un bien-être scolaire globalement préservé.");
+    }
+    if (/(isole|reste a part|conflit|ne sait pas interagir)/i.test(norm(obs.social + ' ' + obs.participation))) {
+      pushUnique(hypotheses, "Les difficultés sociales décrites peuvent relever d'un décalage dans les codes relationnels, d'une fragilité émotionnelle, ou d'un retrait secondaire aux difficultés scolaires.");
+    }
+
+    if (s.bienetre < 38) signauxAlerte.push("La perte de sens scolaire, la démotivation marquée ou les signes de souffrance décrits justifient probablement un échange complémentaire avec l'équipe et le centre PMS.");
+    if (s.social < 35) signauxAlerte.push("L'isolement et les tensions avec les pairs semblent suffisamment présents pour mériter un suivi spécifique.");
+    if (obs.famille && /(violence|maltrait|danger|protection|placement)/i.test(norm(obs.famille))) {
+      signauxAlerte.push("Certains éléments familiaux évoqués paraissent préoccupants ; ils demandent une attention institutionnelle adaptée, dans le cadre habituel de protection et de concertation.");
+    }
+
+    let bienEtreDetail;
+    if (s.bienetre < 40) {
+      bienEtreDetail = `Le bien-être scolaire semble actuellement fragilisé. Les éléments partagés évoquent davantage une usure, une démotivation ou une disponibilité émotionnelle réduite qu'un engagement serein dans l'école.`;
+    } else if (s.bienetre < 58) {
+      bienEtreDetail = `Le bien-être scolaire apparaît fluctuant. Certains leviers existent, mais ils ne suffisent pas à compenser les fragilités décrites dans le quotidien.`;
+    } else {
+      bienEtreDetail = `Des leviers de motivation et d'engagement existent. Ils méritent d'être identifiés précisément et utilisés pour sécuriser davantage le parcours scolaire.`;
+    }
+
+    let linguistiqueDetail;
+    if (s.langue < 55) {
+      linguistiqueDetail = `La langue d'enseignement peut constituer une variable importante dans ce qui est observé. Il est utile de distinguer ce qui relève de la compréhension linguistique, de l'accès au lexique scolaire, et d'autres dimensions du fonctionnement.`;
+    } else {
+      linguistiqueDetail = `La langue d'enseignement ne paraît pas constituer la difficulté principale au vu des éléments partagés. Les obstacles semblent davantage situés dans d'autres dimensions.`;
+    }
+
+    const indices = {
+      inclusion_pedagogique: {
+        score: s.inclusion,
+        statut: getStatut(s.inclusion),
+        explication: `Évaluation de l'accès aux apprentissages et de l'engagement dans les tâches, à partir des éléments décrits.`
+      },
+      participation_sociale: {
+        score: s.social,
+        statut: getStatut(s.social),
+        explication: `Basé sur la place dans le groupe, les relations avec les pairs et la participation collective évoquées.`
+      },
+      autonomie: {
+        score: s.autonomie,
+        statut: getStatut(s.autonomie),
+        explication: `Basé sur le démarrage, la persistance dans la tâche, les relances nécessaires et la dépendance éventuelle à l'adulte.`
+      },
+      bien_etre: {
+        score: s.bienetre,
+        statut: getStatut(s.bienetre),
+        explication: `Basé sur la motivation, la fatigue, la sécurité émotionnelle et le rapport à l'école décrits.`
+      },
+      accessibilite_linguistique: {
+        score: s.langue,
+        statut: getStatut(s.langue),
+        explication: `Basé sur la maîtrise apparente de la langue d'enseignement et l'accès aux consignes.`
+      }
+    };
+
+    return {
+      type: 'analyse_finale',
+      hypotheses: hypotheses.slice(0, 8),
+      indices,
+      appuis: asavoir.filter(a => /appui|aide|levier|favorable|visuel|force/i.test(a)),
+      raisonnement: dimsActives.length
+        ? `Dimensions fonctionnelles repérées : <strong>${dimsActives.map(d => DIMENSIONS_OBSERVATION[d]?.label || d).join(', ')}</strong>. Elles n'ont pas valeur de diagnostic ; elles servent ici de repères pour penser des ajustements pédagogiques.`
+        : null,
+      asavoir,
+      vigilance,
+      pistes,
+      bien_etre_detail: bienEtreDetail,
+      linguistique_detail: linguistiqueDetail,
+      signaux_alerte: signauxAlerte,
+      conclusion: "Les ajustements proposés sont des points de départ à tester. L'objectif est d'observer ce qui aide réellement cet élève dans son contexte, puis d'ajuster progressivement avec l'équipe."
+    };
+  };
+
+  // Démos enrichies avec contexte familial léger
+  DEMO_PROFILES = [
+    {
+      id: 'entree_tache',
+      name: "Entrée dans la tâche / dépendance à l'adulte",
+      messages: [
+        "Lucas est un élève discret, qui ne perturbe pas la classe, mais qui reste souvent en attente.",
+        "Quand une activité démarre, il ne se met presque jamais au travail seul et attend qu'un adulte vienne vers lui.",
+        "Face à une feuille blanche ou à une tâche un peu ouverte, il peut rester bloqué longtemps sans savoir par où commencer.",
+        "En revanche, si on amorce avec lui la première étape ou si un exemple est déjà visible, il peut ensuite produire un travail correct.",
+        "Son attention décroche vite quand l'entrée dans la tâche n'est pas sécurisée.",
+        "Avec les autres, ce n'est pas l'axe le plus préoccupant, même s'il ne prend pas beaucoup de place dans le groupe.",
+        "La famille décrit aussi des devoirs compliqués à la maison, avec beaucoup de tensions autour du travail."
+      ],
+      data: {
+        pseudo: "Lucas", niveau: "3e-4e primaire", age: "8-9 ans",
+        diagnostic: "Des difficultés suspectées, sans testing à ce stade", typesBesoin: ["TDAH"],
+        obs: {
+          histoire: "Lucas décroche facilement et semble peu engagé si la tâche n'est pas fortement soutenue.",
+          moments_difficiles: "Les difficultés se voient surtout dans les activités où il doit se lancer seul et maintenir son effort.",
+          moments_positifs: "Quand l'entrée dans la tâche est sécurisée, avec un exemple concret et une première étape visible, Lucas démarre nettement mieux.",
+          forces: "Il comprend souvent le fond et peut réussir quand le cadre l'aide à entrer dans l'activité.",
+          appuisExistants: "La présence adulte, la check-list et l'exemple concret l'aident beaucoup.",
+          participation: "Il participe peu spontanément mais ne perturbe pas la classe.",
+          consignes: "Il comprend mieux avec du visuel et quand on montre.",
+          autonomie: "Sans relance, cela fonctionne peu. Il a besoin d'être lancé.",
+          social: "Plutôt en retrait, mais sans conflit majeur.",
+          transitions: "Les changements de tâche demandent aussi un étayage.",
+          bienetre: "Il paraît vite découragé quand il n'arrive pas à entrer dans la tâche.",
+          langue: "Il parle français sans souci.",
+          famille: "Les devoirs à la maison sont source de tensions répétées.",
+          complement: ""
+        }
+      }
+    },
+    {
+      id: 'anxiete_transitions',
+      name: "Anxiété / transitions / surcharge",
+      messages: [
+        "Inès peut être très investie quand tout est annoncé clairement et que le cadre reste stable.",
+        "En revanche, un changement imprévu, une consigne donnée dans l'urgence ou une activité qui change brutalement la déstabilisent fortement.",
+        "Dans ces moments-là, elle peut se mettre à pleurer, se retirer ou ne plus parvenir à travailler.",
+        "Quand on prend le temps d'anticiper avec elle et de redire ce qui va se passer, les choses se passent nettement mieux.",
+        "Elle a des capacités réelles, mais elles s'effacent dès que la tension monte.",
+        "La famille évoque aussi une séparation récente, avec une fatigue émotionnelle plus marquée depuis quelque temps."
+      ],
+      data: {
+        pseudo: "Inès", niveau: "3e-4e primaire", age: "8-9 ans",
+        diagnostic: "Aucune démarche en cours à ce stade", typesBesoin: [],
+        obs: {
+          histoire: "Les réactions d'Inès varient fortement selon le niveau de sécurité du cadre.",
+          moments_difficiles: "Les changements, imprévus et transitions concentrent l'essentiel des difficultés.",
+          moments_positifs: "Quand la journée est structurée et annoncée à l'avance, elle retrouve ses capacités.",
+          forces: "Elle est capable de réussir et de s'investir quand elle se sent rassurée.",
+          appuisExistants: "L'anticipation, les repères stables et la possibilité de poser une question en amont l'aident.",
+          participation: "Participation variable ; elle se retire quand elle est submergée.",
+          consignes: "Les consignes passent mieux quand elles sont données calmement et une à une.",
+          autonomie: "Elle peut être autonome si la situation n'est pas trop chargée émotionnellement.",
+          social: "Les relations existent, mais deviennent plus fragiles quand elle est en tension.",
+          transitions: "Très difficiles ; l'imprévu déclenche vite une surcharge.",
+          bienetre: "Anxiété visible, fatigue émotionnelle et saturation en fin de journée.",
+          langue: "Pas de difficulté de langue particulière.",
+          famille: "Séparation parentale récente avec un climat émotionnel compliqué.",
+          complement: ""
+        }
+      }
+    },
+    {
+      id: 'social_isolement',
+      name: "Social / isolement / communication",
+      messages: [
+        "Noah est un élève discret, souvent en retrait dans le groupe.",
+        "Dans les temps non structurés, il reste facilement seul et va peu vers les autres.",
+        "En classe, il peut être très pertinent sur certains sujets, surtout lorsqu'ils rejoignent ses centres d'intérêt.",
+        "En revanche, le travail de groupe, les implicites relationnels et les échanges spontanés semblent lui coûter.",
+        "Il n'est pas forcément en conflit ouvert, mais on perçoit un décalage et parfois quelques tensions.",
+        "La famille dit qu'à la maison aussi il reste beaucoup dans son univers et supporte mal certaines interactions sociales."
+      ],
+      data: {
+        pseudo: "Noah", niveau: "1re-2e secondaire", age: "12-13 ans",
+        diagnostic: "Des difficultés suspectées, sans évaluation finalisée", typesBesoin: ["TSA"],
+        obs: {
+          histoire: "Noah paraît en décalage avec le groupe malgré de réelles compétences dans certains domaines.",
+          moments_difficiles: "Les travaux de groupe, les pauses et les interactions non cadrées sont les moments les plus délicats.",
+          moments_positifs: "Il s'engage beaucoup mieux dans les tâches individuelles et sur ses centres d'intérêt.",
+          forces: "Bonne mémoire, précision, qualité de production quand le cadre lui convient.",
+          appuisExistants: "Le travail individuel, la structuration et les repères explicites l'aident.",
+          participation: "Participation faible à l'oral sauf sur certains sujets.",
+          consignes: "Il comprend mieux quand les attentes sont explicites et très concrètes.",
+          autonomie: "Correcte dans les tâches individuelles connues.",
+          social: "Isolement relatif, retrait et quelques tensions liées aux interactions.",
+          transitions: "Pas de difficulté majeure hors situations sociales nouvelles.",
+          bienetre: "Pas de souffrance manifeste, mais sa place dans le groupe semble fragile.",
+          langue: "Le français ne semble pas poser difficulté.",
+          famille: "Les parents rapportent aussi un retrait important à la maison et peu d'appétence pour les interactions sociales.",
+          complement: ""
+        }
+      }
+    }
+  ];
+
+  runDemo = function(profileId = null) {
+    const profiles = Array.isArray(DEMO_PROFILES) ? DEMO_PROFILES : [];
+    const profile = profileId
+      ? profiles.find(p => p.id === profileId) || profiles[0]
+      : profiles[Math.floor(Math.random() * profiles.length)];
+
+    if (!profile) {
+      addBotMessage("Impossible de lancer la démo pour le moment.");
+      return;
+    }
+
+    initState();
+    resetUI();
+    state.data = JSON.parse(JSON.stringify(profile.data));
+    state.step = 'final';
+    updateProgress(8);
+
+    addBotMessage("Simulation de situation réelle");
+    profile.messages.forEach((msg, idx) => {
+      setTimeout(() => addUserMessage(msg), 350 + idx * 420);
+    });
+    setTimeout(() => {
+      addBotMessage("Merci pour ces éléments. Je prépare une synthèse d'appui à la réflexion…");
+      setTimeout(() => renderAnalysis(buildAnalysis()), 850);
+    }, 350 + profile.messages.length * 420);
+  };
+
+})();
+</script>
+
 </body>
 </html>
